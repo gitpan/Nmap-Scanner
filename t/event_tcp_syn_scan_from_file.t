@@ -12,7 +12,6 @@ my $scanner = Nmap::Scanner->new();
 $scanner->debug(1);
 my $scan = $scanner->scan_from_file(FILE);
 
-
 ok($scan);
 
 my $host = $scan->get_host_list()->get_next();

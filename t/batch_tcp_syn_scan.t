@@ -12,6 +12,14 @@ my $scan = Nmap::Scanner->new();
 
 ok($scan);
 
+my $SKIP = Nmap::Scanner::Scanner::_find_nmap() ? 0 : 
+           "nmap not found in PATH (See http://www.insecure.org/nmap/)";
+
+if ($SKIP) {
+    skip($SKIP);
+    skip($SKIP);
+    exit;
+}
 $scan->add_target('localhost');
 $scan->add_scan_port('1-1024');
 $scan->tcp_connect_scan();

@@ -23,6 +23,8 @@ to start.
 If you want to look pre-install, cd to lib first.
 
 SYNOPSIS
+========
+
 
 Nmap::Scanner perlifies the output of the network mapping tool nmap 
 (http://www.insecure.org/nmap/), creating lists of model objects in batch scan
@@ -41,36 +43,29 @@ This version, only parses the XML output from nmap (-oX -) as that is the most
 stable output format from nmap and will change very little compared to the 
 other output formats (according to Fyodor, the author of nmap).
 
-I contributed a few very minor patches to the nmap project in order to get
-the port found event to produce XML output (the "normal" format is the only 
-other output format that shows this event) ... this allows me to continue to 
-refine both the event-based and batch mode scanning model.
+PROJECT INFORMATION
+===================
 
-This module lets the user pass all nmap scanning flags to the scan method:
-
-my $scanner = Nmap::Scanner->new();
-my $results = $scanner->scan('-sS -P0 -O');
-
-Hopefully this will make the module more useful to people who are already 
-familiar with nmap.  
-
-Nmap::Scanner still does support some setter-style option methods.  I had
-some very productive discussions with Anthony Persaud about them, as I was
-thinking of dropping them altogether; he convinced me that some people do like 
-them.  I also changed all Nmap::Scanner setters in the Nmap::Scanner::Scanner 
-class so they return $self to allow for chaining, again after some good 
-discussing/arguing with Anthony :).
+Home page: http://nmap-scanner.sourceforge.net/
 
 If you are interested in making suggestions, reporting bugs, etc, please 
 join the nmap-scanner mailing list at
 
-http://webwizarddesign.com/mailman/listinfo/nmap-scanner
+https://lists.sourceforge.net/lists/listinfo/nmap-scanner-general
+
+or use the Sourceforge "Help" or "Open Discussion" forums:
+
+http://sourceforge.net/forum/?group_id=101546
+
+If you are interested in contributing, join the mailing list or post to the
+"Developers" forum:
+
+http://sourceforge.net/forum/forum.php?forum_id=351428
 
 Please feel free to email me with nmap-scanner related questions, comments, and
-criticisms.  All feedback is welcomed.
+criticisms (mailing list postings preferred).  All feedback is welcomed.
 
-I hope you find this project useful :).
-
+We hope you find this project useful,
 Max
 
-nmap -AT- webwizarddesign -dot- com
+maxschube@cpan.org

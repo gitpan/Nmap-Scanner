@@ -42,6 +42,16 @@ use strict;
 
 BEGIN { plan tests => 3 }
 
+my $SKIP = Nmap::Scanner::Scanner::_find_nmap() ? 0 : 
+           "nmap not found in PATH (See http://www.insecure.org/nmap/)";
+
+if ($SKIP) {
+    skip($SKIP);
+    skip($SKIP);
+    skip($SKIP);
+    exit;
+}
+
 my $scan = MyScanner->new();
 
 ok($scan);
