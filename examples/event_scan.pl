@@ -9,11 +9,12 @@ use strict;
 my $scanner = new Nmap::Scanner;
 
 $scanner->tcp_syn_scan();
-$scanner->add_scan_port('21');
+#$scanner->debug(1);
+$scanner->add_scan_port($ARGV[1] || '21');
 $scanner->ack_icmp_ping();
 $scanner->guess_os();
 $scanner->add_target($ARGV[0] || 'localhost');
-$scanner->max_rtt_timeout(200);
+$scanner->max_rtt_timeout(300);
 $scanner->register_scan_complete_event(\&scan_complete);
 $scanner->register_scan_started_event(\&scan_started);
 $scanner->register_port_found_event(\&port_found);
@@ -21,42 +22,63 @@ $scanner->register_no_ports_open_event(\&no_ports);
 $scanner->scan();
 
 sub no_ports {
-    my $self     = shift;
-    my $hostname = shift;
-    my $ip       = shift;
-    my $state    = shift;
+    my $self       = shift;
+    my $host       = shift;
+    my $extraports = shift;
 
-    print "All ports on $hostname ($ip) are in state $state\n";
+    my $name = $host->name();
+    my $addresses = join(',', map {$_->address()} $host->addresses());
+    my $state = $extraports->state();
+
+    print "All ports on host $name ($addresses) are in state $state\n";
 }
 
 sub scan_complete {
-
-    my $self     = shift;
-    my $host = shift;
+    my $self      = shift;
+    my $host      = shift;
 
     print "Finished scanning ", $host->name(),"\n";
-    print "Host is of type: " . $host->os_guess(),"\n";
-    print "Host has been up since " . $host->uptime_date(),"\n";
+    my $guess = $host->os_guess();
+    my @matches = $host->os_guess()->os_matches();
+
+    if ($guess && @matches) {
+        print "OS guesses:\n";
+        for my $match (@matches) {
+            print "    " . $match->name() . "/(". $match->accuracy() . "% sure)\n";
+        }
+        my $uptime = $guess->uptime;
+        print "Host has been up since " . $uptime->last_boot(),"\n"
+            if $uptime;
+        my $t = $guess->tcp_sequence();
+        print "TCP Sequence difficulty: " . $t->difficulty(),"\n"
+            if $t;
+    } else {
+        print "Can't figure out what OS ",$host->name()," has.\n";
+    }
 
 }
 
 sub scan_started {
     my $self     = shift;
-    my $hostname = shift;
-    my $ip       = shift;
-    my $status   = shift;
+    my $host     = shift;
 
-    print "$hostname ($ip) is $status\n";
+    my $hostname = $host->name();
+    my $addresses = join(',', map {$_->address()} $host->addresses());
+    my $status = $host->status();
+
+    print "$hostname ($addresses) is $status\n";
 }
 
 sub port_found {
     my $self     = shift;
-    my $hostname = shift;
-    my $ip       = shift;
+    my $host     = shift;
     my $port     = shift;
 
-    print "On host $hostname ($ip), found ",
-          $port->state()," port ",join('/',$port->protocol(),$port->number()),
-          "\n";
+    my $name = $host->name();
+    my $addresses = join(',', map {$_->address()} $host->addresses());
+
+    print "On host $name ($addresses), found ",
+          $port->state()," port ",
+          join('/',$port->protocol(),$port->number()),"\n";
 
 }

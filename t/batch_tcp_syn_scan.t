@@ -14,7 +14,7 @@ ok($scan);
 
 $scan->add_target('localhost');
 $scan->add_scan_port('1-1024');
-$scan->tcp_syn_scan();
+$scan->tcp_connect_scan();
 
 my $localhost = $scan->scan()->get_host_list()->get_next();
 ok(sub { $localhost->name() ne '' });

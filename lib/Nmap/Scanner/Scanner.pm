@@ -1,14 +1,14 @@
 package Nmap::Scanner::Scanner;
 
 use File::Spec;
-use Nmap::Scanner::Backend::Normal;
+use Nmap::Scanner::Backend::XML;
 use strict;
 
 =pod
 
 =head1 DESCRIPTION
 
-This class is the primary class of this set; it is the driver for
+This is the primary class of this module; it is the driver for
 the Nmap::Scanner hierarchy.  To use it, create an instance of
 Nmap::Scanner, possibly set the path to Nmap with nmap_location()
 (the default behaviour of this class is to search for nmap in
@@ -18,7 +18,8 @@ my $nmap = new Nmap::Scanner();
 $nmap->nmap_location('/usr/local/bin/nmap');
 
 Set any options you wish to use in order to run the scan in either
-batch or event mode, and then call scan() to start scanning.
+batch or event mode, and then call scan() to start scanning.  The
+results are return in an Nmap::Scanner::Backend::Results object.
 
 my $results = $nmap->scan();
 
@@ -34,44 +35,43 @@ man page.
 
 See examples/ directory in the distribution for many more)
 
-use Nmap::Scanner;
-my $scan = Nmap::Scanner->new();
-
-$scan->add_target('localhost');
-$scan->add_target('host.i.administer');
-$scan->add_scan_port('1-1024');
-$scan->add_scan_port('31337');
-$scan->tcp_syn_scan();
-$scan->noping();
-
-my $results = $scan->scan();
-
-my $hosts = $results->gethostlist();
-
-while (my $host = $hosts->getnext()) {
-
-    print "On " . $host->name() . ": \n";
-
-    my $ports = $host->getportlist();
-
-    while (my $port = $ports->getnext()) {
-        print join(' ',
-            'Port',
-            $port->service() . '/' . $port->number(),
-            'is in state',
-            $port->state(),
-            "\n"
-        );
-    }
-
-}
+  use Nmap::Scanner;
+  my $scan = Nmap::Scanner->new();
+  
+  $scan->add_target('localhost');
+  $scan->add_target('host.i.administer');
+  $scan->add_scan_port('1-1024');
+  $scan->add_scan_port('31337');
+  $scan->tcp_syn_scan();
+  $scan->noping();
+  
+  my $results = $scan->scan();
+  
+  my $hosts = $results->gethostlist();
+  
+  while (my $host = $hosts->get_next()) {
+  
+      print "On " . $host->name() . ": \n";
+  
+      my $ports = $host->get_port_list();
+  
+      while (my $port = $ports->get_next()) {
+          print join(' ',
+              'Port',
+              $port->service() . '/' . $port->number(),
+              'is in state',
+              $port->state(),
+              "\n"
+          );
+      }
+  
+  }
 
 =cut
 
 sub new {
     my $class = shift;
-    my $you = {};
-    $you->{'OPTIONS'}->{'-o'} = 'N -';
+    my $you = { OPTS => {'-oX' => '-'}, DEBUG => 0};
     return bless $you, $class;
 }
 
@@ -105,12 +105,9 @@ sub register_scan_complete_event {
 Register for this event to be notified when nmap has started to
 scan one of the targets specified in add_target.  Pass in a 
 function reference that can accept a $self object reference,
-a string variable representing the host name of the host being
-scanned, a string variable representing the IP address of the
-host, and a variable to hold the status of the host .. either
-"up" or "down."
+and a reference to an Nmap::Scanner::Host object.
 
-scan_started($self, $hostname, $ip, $status);
+scan_started($self, $host);
 
 =cut
 
@@ -124,16 +121,17 @@ sub register_scan_started_event {
 
 Register to be notified if a scanned host is found to
 be closed (no open ports).  Pass in a function reference
-that can take an $self object reference, a string containing
-the host name of the host scanned and a string containing
-the IP address of the host scanned.
+that can take an $self object reference and a reference to
+a Host object.
 
-host_closed($self, $hostname, $ip);
+XXX --- TBD (not implemented yet).
+
+host_closed($self, $host);
 
 =cut
 
 sub register_host_closed_event {
-    $_[0]->{'SCAN_STARTED_EVENT'} = [$_[0], $_[1]];
+    $_[0]->{'HOST_CLOSED_EVENT'} = [$_[0], $_[1]];
 }
 
 =pod
@@ -143,11 +141,9 @@ sub register_host_closed_event {
 Register to be notified when a port is scanned on a host.  The
 port may be in any state ... closed, open, filtered.  Pass a
 reference to a function that takes a $self object reference,
-a string containing the host name of the host scanned, a
-string with the IP address of the host scanned, and a 
-reference to the port object representin gthe port scanned.
+a Host reference, and a Port reference.
 
-port_found($self, $hostname, $ip, $port);
+port_found($self, $host, $port);
 
 =cut
 
@@ -161,12 +157,11 @@ sub register_port_found_event {
 
 Register to be notified in the event that no ports are found
 to be open on a host.  Pass in a reference to a function that
-takes a $self object reference, a string containing the host
-name of the scanned host, a string containing the IP address
-of the scanned host, and a string containing the status of
-all ports on the host ... closed, filtered, etc.
+takes a $self object reference, a Host reference, and a reference
+to an ExtraPorts object.  The ExtraPorts object describes ports
+that are in a state other than open (e.g. flitered, closed).
 
-port_found($self, $hostname, $ip, $status);
+port_found($self, $host, $extra_ports);
 
 =cut
 
@@ -226,7 +221,7 @@ scan types are supported with this release due to time limitations.
 If this scan is used, the protocols can be retrieve from
 the Nmap::Scanner::Host objects using the method
 get_protocol_list() .. this will return a list of
-Nmap::Scanner::Protocol object references.
+Nmap::Scanner::Port object references of type ip.
 
 =head2 idle_scan($zombie_host, $probe_port)
 
@@ -237,9 +232,13 @@ Nmap::Scanner::Protocol object references.
 =head2 rpc_scan()
 
 XXX:  Need to implement code to support the results returned from
-this.
+this.  START HERE in man page.
 
 =cut
+
+sub use_interface {
+    $_[0]->{OPTS}->{'-e'} = shift;
+}
 
 sub tcp_connect_scan {
     $_[0]->{TYPE} = 'T';
@@ -593,6 +592,8 @@ sub scan {
     
     my $this = shift;
 
+    my $fast_options = shift || "";
+
     my $nmap = $this->{'NMAP'} || _find_nmap();
 
     die "Can't find nmap!\n" unless $nmap;
@@ -605,40 +606,40 @@ sub scan {
 
     my $cmd = "$nmap -v -v -v";
 
-    $cmd .= " -s$this->{'TYPE'}" if defined $this->{'TYPE'};
+    if (! $fast_options) {
 
-    $cmd .= " -s$this->{'UDPSCAN'}" if $this->{'UDPSCAN'};
+        $cmd .= " -s$this->{'TYPE'}" if defined $this->{'TYPE'};
 
-    if ($this->{PORTS}) {
-        $cmd .= " -p " . join(',', keys %{$this->{PORTS}});
-    }
+        $cmd .= " -s$this->{'UDPSCAN'}" if $this->{'UDPSCAN'};
 
-    #  Gather other options
-    if ($this->{'OPTS'}) {
-        for my $opt (keys %{$this->{OPTS}}) {
-            $cmd .= " " . $opt . " " . $this->{'OPTS'}->{$opt};
+        if ($this->{PORTS}) {
+            $cmd .= " -p " . join(',', keys %{$this->{PORTS}});
         }
-    }
 
-    $cmd .= " " . join(' ', keys %{$this->{'TARGETS'}});
+        #  Gather other options
+        if ($this->{'OPTS'}) {
+            for my $opt (keys %{$this->{OPTS}}) {
+                $cmd .= " " . $opt . " " . $this->{'OPTS'}->{$opt};
+            }
+        }
+
+        $cmd .= " " . join(' ', keys %{$this->{'TARGETS'}});
+
+    } else {
+        $cmd .= " $fast_options -oX -";
+    }
 
     die "$cmd\n" if $this->{'NORUN'};
 
-    #  Choose the right kind of backend processor based
-    #  on output selection type.
-
-    my $processor = undef;
-
-    if ($this->{'OPTIONS'}->{'-o'} eq 'N -') {
-        $processor = new Nmap::Scanner::Backend::Normal();
-    }
+    my $processor = Nmap::Scanner::Backend::XML->new();
 
     #  All backend processors support these.
     $processor->debug($this->{'DEBUG'});
     $processor->register_scan_complete_event($this->{'SCAN_COMPLETE_EVENT'});
     $processor->register_scan_started_event($this->{'SCAN_STARTED_EVENT'});
-    $processor->register_host_closed_event($this->{'SCAN_STARTED_EVENT'});
+    $processor->register_host_closed_event($this->{'HOST_CLOSED_EVENT'});
     $processor->register_port_found_event($this->{'PORT_FOUND_EVENT'});
+    $processor->register_no_ports_open_event($this->{'NO_PORTS_OPEN_EVENT'});
 
     #  And this.
     $this->{'RESULTS'} = $processor->process($cmd);
@@ -669,7 +670,9 @@ sub _find_nmap {
     local($_);
     local(*DIR);
 
-    for my $dir (split(':',$ENV{'PATH'})) {
+    my $sep = ($^O =~ /Win32/) ? ';' : ':';
+
+    for my $dir (split($sep, $ENV{'PATH'})) {
         opendir(DIR,$dir) || next;
         my @files = (readdir(DIR));
         closedir(DIR);
@@ -677,7 +680,8 @@ sub _find_nmap {
         for my $file (@files) {
             next unless $file eq 'nmap';
             $path = File::Spec->catfile($dir,$file);
-            next unless -r $path && -x _;
+            #  Should symbolic link be considered?  Helps me on cygwin but ...
+            next unless -r $path && (-x _ || -l _);
             return $path;
             last DIR;
         }

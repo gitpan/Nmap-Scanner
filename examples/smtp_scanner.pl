@@ -1,10 +1,12 @@
 #!/usr/bin/perl
 
-package WebScanner;
+package SmtpScanner;
+
+use lib 'lib';
+use Nmap::Scanner;
+use Nmap::Scanner::Util::BannerScanner;
 
 use strict;
-use lib 'lib';
-use Nmap::Scanner::Util::BannerScanner;
 use vars qw(@ISA);
 
 @ISA = qw(Nmap::Scanner::Util::BannerScanner);
@@ -12,16 +14,13 @@ use vars qw(@ISA);
 sub new {
 
     my $class = shift;
-    my $self = $class->SUPER::new();
+    my $self  = $class->SUPER::new();
 
-    $self->regex('Server:\s*(.+)$');
-    $self->send_on_connect("HEAD / HTTP/1.0\r\n\r\n");
-    $self->add_scan_port(80);
-    $self->add_scan_port(8080);
+    $self->regex('^\d+ (.*)$');
+    $self->add_scan_port(25);
     $self->add_target($_[0] || die "Need target in constructor!\n");
 
     return bless $self, $class;
-
 }
 
 1;
@@ -29,9 +28,9 @@ sub new {
 use lib 'lib';
 use strict;
 
-my $web = WebScanner->new($ARGV[0] || 'localhost');
+my $smtp = SmtpScanner->new($ARGV[0] || 'localhost');
 
-$web->register_banner_found_event(
+$smtp->register_banner_found_event(
     sub { shift; print $_[0]->name(), 
                  " (" . ($_[0]->addresses())[0]->address() . "): $_[1]\n"; });
-$web->scan();
+$smtp->scan();

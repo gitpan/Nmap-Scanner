@@ -13,23 +13,18 @@ of an nmap scan.
 
 use Nmap::Scanner::Port;
 use Nmap::Scanner::PortList;
-use Nmap::Scanner::ProtocolList;
 
 use strict;
 
 sub new {
     my $class = shift;
-    my $me = { NAME => undef, IP => undef, PORTS => {} };
+    my $me = { NAME => undef, ADDRESSES => [], PORTS => {} };
     return bless $me, $class;
 }
 
 =pod
 
 =head2 name()
-
-This may be the same value as ip() if the name does not
-resolve using DNS or if DNS lookups have been turned off
-for nmap.
 
 =cut
 
@@ -51,22 +46,41 @@ sub status {
 
 =pod
 
-=head2 ip()
+=head2 addresses()
 
-IP address of the host as determined by nmap.
+Addresses of the host as determined by nmap (Address references).
 
 =cut
 
-sub ip {
-    (defined $_[1]) ? ($_[0]->{IP} = $_[1]) : return $_[0]->{IP};
+sub addresses {
+    return @{$_[0]->{ADDRESSES}};
+}
+
+sub add_address {
+    push(@{$_[0]->{ADDRESSES}}, $_[1]) if $_[1];
+}
+
+=pod
+
+=head2 extra_ports()
+
+Nmap::Scanner::ExtraPorts instance associated with this host.
+
+=cut
+
+sub extra_ports {
+    my $self = shift;
+    @_ ? $self->{EXTRA_PORTS} = shift
+       : return $self->{EXTRA_PORTS};
 }
 
 =pod
 
 =head2 os_guess()
 
-String representing the name/version of the operating system
-of the host, as determined by nmap.  Only present if guess_os()
+holds a reference to an Nmap::Scanner::OS object that
+describes the operating system and TCP fingerprint for this
+host, as determined by nmap.  Only present if guess_os()
 is called on the Nmap::Scanner::Scanner object AND nmap is
 able to determine the OS type via TCP fingerprinting.  See the
 nmap manual for more details.
@@ -77,37 +91,6 @@ sub os_guess {
     (defined $_[1]) ? ($_[0]->{OS} = $_[1]) : return $_[0]->{OS};
 }
 
-
-=pod
-
-=head2 uptime_days()
-
-Days since the last reboot for this host.  This MAY be available
-if guess_os() is called on the Nmap::Scanner::Scanner reference.
-Not available for all hosts.
-
-=cut
-
-sub uptime_days {
-    (defined $_[1]) ? 
-        ($_[0]->{UPTIME_DAYS} = $_[1]) : return $_[0]->{UPTIME_DAYS};
-}
-
-=pod
-
-=head2 uptime_date()
-
-Date of the last reboot for this host.  This MAY be available
-if guess_os() is called on the Nmap::Scanner::Scanner reference.
-Not available for all hosts.
-
-=cut
-
-sub uptime_date {
-    (defined $_[1]) ? 
-        ($_[0]->{UPTIME_DATE} = $_[1]) : return $_[0]->{UPTIME_DATE};
-}
-
 =pod
 
 =head2 add_port($port_object_reference)
@@ -115,18 +98,14 @@ sub uptime_date {
 =cut
 
 sub add_port {
-    $_[0]->{PORTS}->{lc($_[1]->protocol())}->{$_[1]->number()} = $_[1]
-        if (defined $_[1]);
-}
 
-=pod
+    my $self = shift;
+    my $port = shift;
 
-=head2 add_protocol($protocol_object_reference)
+    return unless defined $port;
 
-=cut
-
-sub add_protocol {
-    (defined $_[1]) ? ($_[0]->{PROTOS} = $_[1]) : return $_[0]->{PROTOS};
+    Nmap::Scanner::debug("Adding port with proto: " . $port->protocol());
+    $self->{PORTS}->{lc($port->protocol())}->{$port->number()} = $port;
 }
 
 =pod
@@ -183,7 +162,7 @@ while (my $p = $ports->get_next()) {
 
 =head2 get_port_list()
 
-=head2 get_protocol_list()
+=head2 get_ip_port_list()
 
 =head2 get_tcp_port_list()
 
@@ -197,8 +176,8 @@ sub get_port_list {
     );
 }
 
-sub get_protocol_list {
-    return new Nmap::Scanner::ProtocolList($_[0]->{PROTOS});
+sub get_ip_port_list {
+    return new Nmap::Scanner::PortList(undef, $_[0]->{PORTS}->{'ip'});
 }
 
 sub get_tcp_port_list {
@@ -207,6 +186,49 @@ sub get_tcp_port_list {
 
 sub get_udp_port_list {
     return new Nmap::Scanner::PortList(undef, $_[0]->{PORTS}->{'udp'});
+}
+
+sub as_xml {
+
+    my $self = shift;
+
+    my $xml = 
+        ' <host '.
+        'name="' . $self->name() . '" '.
+        'status="' . $self->status() . "\">\n";
+
+    for my $addr ($self->addresses()) {
+        $xml .=  "  " .$addr->as_xml() . "\n  ";
+    }
+
+    $xml .=  "  " .$self->os_guess()->as_xml() . "\n  "
+        if defined $self->os_guess();
+
+    $xml .= "  <ports>\n";
+
+    $xml .= "    <tcp>\n";
+    my $tcp_ports =  $self->get_tcp_port_list();
+    $xml .= $tcp_ports->as_xml() . "\n" if defined $tcp_ports;
+    $xml .= "    </tcp>\n";
+
+    $xml .= "    <udp>\n";
+    my $udp_ports =  $self->get_udp_port_list();
+    $xml .= $udp_ports->as_xml() . "\n" if defined $udp_ports;
+    $xml .= "    </udp>\n";
+
+
+
+    $xml .= "    <ip>\n";
+    my $protos =  $self->get_ip_port_list();
+    $xml .= $protos->as_xml() . "\n" if defined $protos;
+    $xml .= "    </ip>\n";
+    $xml .= "    " . $self->extra_ports()->as_xml() ."\n"
+                if defined $self->extra_ports();
+    $xml .= "  </ports>\n";
+    $xml .= "  </host>\n";
+
+    return $xml;
+
 }
 
 1;

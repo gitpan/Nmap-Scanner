@@ -2,14 +2,17 @@ package Nmap::Scanner;
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.01';
+$VERSION = '0.5';
+
+#  Set this to 1 and debugging is on for all modules
+$Nmap::Scanner::DEBUG = 0;
 
 use Nmap::Scanner::Scanner;
 use Nmap::Scanner::Port;
 use Nmap::Scanner::Host;
+use Nmap::Scanner::OS;
 use Nmap::Scanner::PortList;
 use Nmap::Scanner::HostList;
-use Nmap::Scanner::ProtocolList;
 use Nmap::Scanner::Util;
 
 @ISA = qw(Nmap::Scanner::Scanner);
@@ -26,15 +29,20 @@ sub new {
 
 }
 
+sub debug {
+    return 0 unless $Nmap::Scanner::DEBUG == 1;
+    my $msg = shift;
+    print __PACKAGE__ . ": $msg\n";
+    return 1;
+}
+
 1;
 
 __END__
 
-# Below is the stub of documentation for your module. You better edit it!
-
 =head1 NAME
 
-Nmap::Scanner 
+Nmap::Scanner - Perform and manipulate nmap scans using perl
 
 =head1 SYNOPSIS
 
@@ -51,48 +59,44 @@ Nmap::Scanner
   $scanner->guess_os();
   $scanner->max_rtt_timeout(200);
   $scanner->add_target('some.host.out.there.com.org');
+
+  #   $results is an instance of Nmap::Scanner::Backend::Results
   my $results = $scanner->scan();
 
-  #  Event scan method
+  #  Print the results out as an well-formatted XML document
+  print $results->as_xml();
+
+  #  Event scan method using *new* easier way to set scan options.
 
   my $scanner = new Nmap::Scanner;
-  $scanner->tcp_syn_scan();
-  $scanner->add_scan_port('1-1024');
-  $scanner->add_scan_port(8080);
-  $scanner->guess_os();
-  $scanner->max_rtt_timeout(200);
-  $scanner->add_target('some.host.out.there.com.org');
   $scanner->register_scan_started_event(\&scan_started);
   $scanner->register_port_found_event(\&port_found);
-  $scanner->scan();
+  $scanner->scan('-sS -p 1-1024 -O --max-rtt-timeout 200 somehost.org.net.it');
 
   sub scan_started {
-
-    my $self     = shift;
-    my $hostname = shift;
-    my $ip       = shift;
-    my $status   = shift;
-
-    print "$hostname ($ip) is $status\n";
-
+      my $self     = shift;
+      my $host     = shift;
+  
+      my $hostname = $host->name();
+      my $addresses = join(',', map {$_->address()} $host->addresses());
+      my $status = $host->status();
+  
+      print "$hostname ($addresses) is $status\n";
   }
-
+  
   sub port_found {
-
-    my $self     = shift;
-    my $hostname = shift;
-    my $ip       = shift;
-    my $port     = shift;
-
-    my $port_num = $port->number();
-    my $port_svc = $port->service();
-    my $port_st  = $port->state();
-    my $port_pr  = $port->protocol();
-
-    print "$hostname ($ip): $port_svc ($port_num:$port_pr) is $port_st\n";
-
+      my $self     = shift;
+      my $host     = shift;
+      my $port     = shift;
+  
+      my $name = $host->name();
+      my $addresses = join(',', map {$_->address()} $host->addresses());
+  
+      print "On host $name ($addresses), found ",
+            $port->state()," port ",
+            join('/',$port->protocol(),$port->number()),"\n";
+  
   }
-
 
 =head1 DESCRIPTION
 
@@ -103,7 +107,10 @@ or classes which can be used to automate and integrate nmap scans elegantly
 into new and existing perl scripts.
 
 If you don't have nmap installed, you will need to download it BEFORE you
-can use these modules.  Get it from http://www.insecure.org/nmap/.
+can use these modules.  Get it from http://www.insecure.org/nmap/.  You will
+need nmap 3.10+ installed to use all the features of this module as I had
+to submit some small patches to the nmap project so that it would emit 
+port found information in XML.
 
 =head1 USAGE
 
@@ -111,8 +118,8 @@ The module set consists of a Scanner class and many classes that support
 the scanner and encapsulate the data output by nmap as it scans.  The
 class that you will likely use most often is Nmap::Scanner.  This class
 encapsulates the nmap scanner options and `drives' the scan process.  It
-provides a convenience constructor that will instantiate an instance of
-Nmap::Scanner::Scanner for you.
+provides a convenience constructor to let you create a scanner
+instance (Nmap::Scanner::Scanner instance).
 
 Scans can be done in two modes using this module set: batch mode and
 event mode.  
@@ -137,9 +144,10 @@ happened and the data found.
 Each function is also passed a reference to the current object
 instance of Nmap::Scanner::Scanner (or a subclass of Nmap::Scanner::Scanner)
 as the FIRST argument so that subclasses with instance-specific data can 
-be easily created (see the Nmap::Scanner::Util package for examples).
+be easily created (see the Nmap::Scanner::Util package and examples included
+with this module for examples).
 
-There are four events that a user can register for: scan started event,
+There are five events that a user can register for: scan started event,
 host closed event, no ports open event, port found event, and scan
 complete event.   The scan started event occurs at the beginning of
 the scan process for EACH host specified with add_target().  The
@@ -152,14 +160,13 @@ target with add_target() is complete.
 
 =head1 NOTES
 
-Nmap::Scanner parses the output from nmap; I hope someday someone creates
-a dynamic shared object library out of nmap so this module can be ported
-to optionally use native calls and thereby speed up performance and decrease
-the likelihood of parsing issues as nmap versions change.
+Nmap::Scanner parses the output from nmap; after some discussion with Fyodor
+it seems this is the most portable and flexible way to use nmap from within
+a programming language.  
 
-The current set of modules parses the output from "-oN" (`normal' output) ...
-I hope to someday add in support for parsing the XML output but didn't have
-time to do that initially.
+The current set of modules parses the output from "-oX" (`XML' output); for
+now this is the only output this module set will handle as it is both
+consistent and likely not to change much (according to Fyodor).
 
 =head1 THANKS
 
@@ -167,18 +174,37 @@ Special thanks to Fyodor (fyodor@insecure.org) for creating such a useful
 tool and to all the developers and contributors who constantly work to 
 improve and fine-tune nmap for grateful users like me!
 
-=head1 BUGS
+Thanks also to those of you who put up with the first two versions of this
+module set; they were very unstable and I appreciate the feedback I have
+received regarding them.  Hopefully you will find this release to be much
+more stable and usable than the previous two.
 
-Many, I am sure!  A HUGE one is there is currently NO error handling.  That
-is my top priority for the next major version of this.  The other big one is
-not supporting XML output.  That too is one for the next revision.
+=head1 FINAL NOTES
 
-Please keep in mind that the API for this software may CHANGE and that this
-is not a complete implementation of nmap in perl!
+Please keep in mind that this is not a complete implementation of nmap in perl!
+
+Also, all long options (e.g. $scanner->tcp_syn_scan()) will go away next 
+release.  The $scanner->scan('options options') method is much easier for 
+nmap users (I think) and doing the long options adds a lot of work and 
+maintenance for what I perceive is very little benefit.  If you disagree
+please let me know!
+
+=head1 NEXT RELEASE
+
+Possibly do some error handling, though I don't know if this really will
+be useful.
+
+Remove long options in favor of using scan($options_string).
+
+Convert my own XML output (as_xml) to be compliant with the nmap DTDs.
+
+More examples.
+
+More complete documentation.
 
 =head1 AUTHOR
 
-Max Schubert, max@perldork.com
+Max Schubert, <nmap -at- webwizarddesign.com>
 
 =head1 LICENSE
 
@@ -187,6 +213,8 @@ This software is released under the same license and terms as perl itself.
 =head1 SEE ALSO
 
 http://www.insecure.org/nmap/
+
+http://www.webwizarddesign.com/nmap/
 
 Nmap::Scanner::Scanner
 

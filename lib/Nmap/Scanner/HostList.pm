@@ -9,7 +9,7 @@ use strict;
 
 Holds a list of Nmap::Scanner::Host
 objects.  get_next() returns a host
-reference while there are ports in
+reference while there are hosts in
 the list and returns undef when
 the list is exhausted.
 
@@ -28,6 +28,25 @@ sub new {
 sub get_next {
     return $_[0]->{LISTREF}->{ shift @{$_[0]->{KEYS}} }
         if @{$_[0]->{KEYS}};
+}
+
+sub as_xml {
+
+    my $self = shift;
+
+    local($_);
+
+    my $xml = "<hosts>\n";
+
+    while ($_ = $self->get_next()) {
+        last unless defined $_;
+        $xml   .= "  " . $_->as_xml();
+    }
+
+    $xml .= "  </hosts>\n";
+
+    return $xml;
+
 }
 
 1;

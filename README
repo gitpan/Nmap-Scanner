@@ -5,6 +5,9 @@ make
 make test
 make install
 
+NOTE:  This module now relies on XML::SAX and XML::SAX::PurePerl for parsing
+       the XML output of nmap.
+
 DOCUMENTATION
 
 If you want to view the docs post installation, do
@@ -21,32 +24,52 @@ If you want to look pre-install, cd to lib first.
 
 SYNOPSIS
 
-Nmap::Scanner provides perl class wrappers for the network mapping
-tool nmap.  In this release, only what I viewed as the most often
-used options and settings are included ... this is not a full implementation
-of the nmap API, but it is more than enough to do some very useful
-things with the modules.  Over time I am sure the gaps will be filled in.
+Nmap::Scanner perlifies the output of the network mapping tool nmap 
+(http://www.insecure.org/nmap/), creating lists of model objects in batch scan
+mode or firing events when significant scanning events occur in event scan mode.
 
-This module does require that nmap be installed in order to do anything
-useful with it ... when it is installed, put it in your PATH or specify
-where nmap is located using the nmap_location() method of 
-Nmap::Scanner::Scanner.  Get nmap from http://www.insecure.org/nmap/
+If you do not have nmap installed on your system, you will need to install it 
+before you can use this module.  Please make sure to use a version that is
+at or newer than 3.10ALPHA4, as I contributed a few small patches to output
+the port found messages nmap outputs as it is running in XML format.
 
-This module parses the output from -oN ... so there may be inter-version
-bugs (I hope they are few as that will not be an easy thing to handle).  
-A future release will parse the XML output, though that doesn't seem to 
-give the same level of direct feedback the -oN output does, so my event 
-handling may change or decrease.
+Older versions (as far back as 2.54BETA32) should work with this module, but the
+port found events will not not be seen.
 
-A good way to get started is to look at the tests and the scripts in the
-examples/ directory.
+This version, and all versions forward, will only parse the XML output
+from nmap (-oX -) as that is the most stable output format from nmap and
+will change very little compared to the other output formats (according
+to Fyodor, the author of nmap).
 
-Please feel free to write me with questions you have about this module
-or feature requests/suggestions.  
+I contributed a few very minor patches to the nmap project in order to get
+the port found event to produce XML output (the "normal" format is the only other
+output format that shows this event) ... this allows me to continue to refine
+both the event-based and batch mode scanning model.
 
-Finally, please remember this is the first release of this module, it is likely
-to change somewhat, though I hope to keep the interface very much similar
-to what it is at this point in time.
+The XML output is structured much differently than the normal output was,
+so the object model for Nmap::Scanner has changed pretty significantly from
+the previous two releases.  Fortunuately, the other two releases were so unstable due
+to the instability of the "normal" output mode that I think very few people
+actually used those two versions of Nmap::Scanner. ;)
 
-Max Schubert
-maxs@perldork.com
+I am also considering giving up matching nmap switches with methods as the options
+change frequently .. this version lets the user pass all nmap scanning flags to the
+scan method ...
+
+my $scanner = Nmap::Scanner->new();
+
+my @hosts = $scanner->scan('-sS -P0 -O');
+
+Hopefully this will also make the module more useful to people who are already
+familiar with nmap.  Most likely all scan option methods will disappear next release
+unless I hear otherwise from users .. the scan($option) will be the way to start 
+a scan if that is the case.
+
+Please feel free to email me with nmap-scanner related questions, comments, and
+criticisms.  All feedback is welcomed.
+
+I hope you find this project useful :).
+
+Max
+
+nmap -AT- webwizarddesign -dot- com

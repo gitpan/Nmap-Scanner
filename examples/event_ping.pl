@@ -15,10 +15,12 @@ $scanner->register_scan_started_event(\&scan_started);
 $scanner->scan();
 
 sub scan_started {
-    shift;
-    my $hostname = shift;
-    my $ip       = shift;
-    my $status   = shift;
+    my $self = shift;
+    my $host = shift;
+
+    my $hostname = $host->name();
+    my $ip       = ($host->addresses)[0]->address();
+    my $status   = $host->status;
 
     print "$hostname ($ip) is $status\n";
 

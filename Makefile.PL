@@ -3,5 +3,9 @@ use ExtUtils::MakeMaker;
 # the contents of the Makefile that is written.
 WriteMakefile(
     'NAME'	=> 'Nmap::Scanner',
-    'VERSION_FROM' => 'Nmap/Scanner.pm', # finds $VERSION
+    'VERSION_FROM' => 'lib/Nmap/Scanner.pm', # finds $VERSION
+    'PREREQ_PM' => {
+        'XML::SAX'           => 0,
+        'XML::SAX::PurePerl' => 0
+    }
 );

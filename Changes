@@ -2,4 +2,33 @@ Revision history for Perl extension Nmap::Scanner.
 
 0.01  Thu Feb  7 20:10:47 EST 2002
 	- First attempt at upload and release.
-
+0.2   
+    - Added OsGuess class to model OS guess and TCP fingerprint output
+      of nmap; if guess_os() is used in scanner, the host will have
+      an OsGuess member available via the os_guess getter.
+    - Added first version of XML output to Nmap::Scanner ... this is
+      a very lightweight XML output that uses no extra libraries ...
+      each model class has an as_xml() method that produces a string version
+      of itself as valid XML.  I did this so that, regardless of backend,
+      XML output could be retrieved.  Perhpas down the road it will
+      be deprecated once Nmap::Scanner is reading the XML output of
+      nmap.
+    - Bug fix.  Multiple host scan complete events were not being fired
+      properly due to some bad logic in Nmap::Scanner::Backend::Normal.
+      This would cause only the LAST host in a list to trigger the
+      host complete event ... so all Util programs broke as well as
+      any program that uses event-based scanning with multiple hosts.
+0.5
+    - Changed to using the XML output format from nmap.
+    - Changed object model to match the XML output.
+    - Added scan($options) so that users don't have to learn MY method names
+      just to use the module set.
+    - Added more examples.
+    - Eliminated all "normal" output processors and the Factory sub-package, as
+      it is not needed anymore.
+    - Eliminated Protocol and ProtocolList models as XML output defines protocols
+      as ports of type IP.
+    - Changed tests to ONLY use tcp connect scans so we don't have install problems
+      for non-root users (reported to me by the CPAN testers .. thanks!)
+    - Eliminated all Nmap::Scanner::Util modules except BannerScanner .. moved others
+      into examples/ as they really aren't core.

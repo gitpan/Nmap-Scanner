@@ -45,4 +45,20 @@ sub get_next {
     return $_[0]->get_next_tcp() || $_[0]->get_next_udp();
 }
 
+sub as_xml {
+    my $self = shift;
+
+    local($_);
+
+    my $xml;
+
+    while ($_ = $self->get_next()) {
+        last unless defined $_;
+        $xml .= "    " . $_->as_xml() . "\n";
+    }
+
+    return $xml;
+
+}
+
 1;

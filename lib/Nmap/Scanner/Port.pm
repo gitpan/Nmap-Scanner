@@ -4,10 +4,9 @@ use strict;
 
 =pod
 
-=head1 DESCRIPTION
+=head1 Name
 
-This class represents a port as represented by the scanning output from
-nmap.
+Port - Holds information about a remote port as detected by nmap.
 
 =cut
 
@@ -22,6 +21,8 @@ sub new {
 =pod
 
 =head2 number()
+
+Port number
 
 =cut
 
@@ -46,6 +47,9 @@ sub owner {
 
 =head2 protocol()
 
+Protocol of the port, 'TCP' or 'UDP' for application level ports,
+'BGP,' 'ICMP,' etc for protocol level ports.
+
 =cut
 
 sub protocol {
@@ -56,7 +60,7 @@ sub protocol {
 
 =head2 state()
 
-Textual representation of the state: `open', `closed', 
+Textual representation of the state of the port: `open', `closed', 
 `filtered', etc.
 
 =cut
@@ -69,12 +73,27 @@ sub state {
 
 =head2 service()
 
-Name of the service if known.
+Name of the service if known (Service reference)
 
 =cut
 
 sub service {
     (defined $_[1]) ? ($_[0]->{SERVICE} = $_[1]) : return $_[0]->{SERVICE};
+}
+
+sub as_xml {
+
+    my $self = shift;
+
+    return
+        '  <port '.
+        'number="'.    $self->number() .'" '.
+        'owner="'.     $self->owner()  .'" '.
+        'protocol="'.  $self->protocol()  .'" '.
+        'state="'.     $self->state().'" '. '>' .
+                       $self->service()->as_xml() .
+                       '</port>';
+
 }
 
 1;

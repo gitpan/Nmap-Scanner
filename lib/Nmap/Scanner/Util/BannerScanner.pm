@@ -1,5 +1,12 @@
 package Nmap::Scanner::Util::BannerScanner;
 
+=pod
+
+=head2 NAME
+
+BannerScanner - base class for performing banner scans
+
+=cut
 use IO::Socket;
 
 use Nmap::Scanner::Scanner;
@@ -14,15 +21,44 @@ sub new {
      return bless $self, $class;
 }
 
+=pod
+
+=head2 regex()
+
+Regular expression to use to match the banner in the remote
+system output.
+
+=cut
+
 sub regex {
     (defined $_[1]) ? ($_[0]->{REGEX} = $_[1]) : return $_[0]->{REGEX};
 }
+
+=pod
+
+=head2 send_on_connect()
+
+Protocol string to send once a connection to the remote host has been
+successfully made.
+
+=cut
 
 sub send_on_connect {
     (defined $_[1]) ? ($_[0]->{SEND} = $_[1]) : return $_[0]->{SEND};
 }
 
-sub callback {
+=pod
+
+=head2 register_scan_complete_event()
+
+Pass in a reference to a function that will be called when the banner is
+found.  The function will receive three arguments:  a reference to self
+(object reference of caller), a reference to an Host object repfresenting 
+the remote host, and the banner as captured.
+
+=cut
+
+sub register_banner_found_event {
     (defined $_[1]) ? ($_[0]->{CALLBACK} = $_[1]) : return $_[0]->{CALLBACK};
 }
 
@@ -42,16 +78,18 @@ sub banner {
         $host, $port, $self->{REGEX}, $self->{SEND}
     );
 
-    &{$self->{CALLBACK}}($self, $host->name(), $host->ip(), $banner)
+    &{$self->{CALLBACK}}($self, $host, $banner)
         if (ref($self->{'CALLBACK'}) eq 'CODE');
 }
 
 sub get_banner {
 
-    my $host  = shift->ip();
-    my $port  = shift->number();
+    my $host  = (shift->addresses())[0]->address();
+    my $port  = shift || return;
     my $regex = shift || '.';
     my $send  = shift;
+
+    $port  = $port->number();
 
     my $server = "";
     local($_);

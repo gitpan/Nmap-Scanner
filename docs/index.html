@@ -1,0 +1,77 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel=stylesheet href="nmap.css">
+<title>Nmap::Scanner: perl class wrappers for the scanning tool nmap</title>
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<h1 align="center">Nmap::Scanner</h1>
+
+<p align="center">&nbsp;</p>
+
+<p align="left">Nmap::Scanner is a
+set of perl classes that provide a programmatic interface to the <a
+href="http://www.insecure.org/nmap/">nmap</a> port
+scanning tool. Nmap does not at this point expose itself as a DLL or
+a shared object, so Nmap::Scanner parses the output from nmap as it runs. 
+This is not ideal, but it works.</p>
+
+<p align="left"><a href="http://www.insecure.org/nmap/">Nmap</a>
+ provides several output formats; Nmap::Scanner
+parses the output of the &quot;normal&quot; format 
+(<code>-oN</code>).I use this format because in super-verbose mode 
+(<code>-v -v -v</code>) nmap outputs a large amount of information 
+during the scan about what is happening.  This allows me to hook callbacks 
+into the output stream and allows me to provide an event-driven programming 
+model option for Nmap::Scanner users.</p>
+
+<p align="left">As of the BetA 2.54
+version, the XML output from nmap does not include the same
+&quot;live&quot; information that the normal output does in super-verbose
+mode, which means the callback functionality becomes crippled if
+I parse the XML. This is a shame because the XML output is
+supposed to be more stable and parsing it is easier.  Hopefully 
+as nmap development continues this will change. A bigger hope 
+is that someone will produce a DLL or shared object version of 
+nmap so that any scripting language that supports DLL/.so -&gt; 
+script glue can create a nice, efficient, OO interface to nmap. 
+Once I learn C and the nmap source well enough I will take a stab 
+at this.</p>
+
+<h3 align="center"><u>Downloads</u></h3>
+<div align="center">
+<table dir="ltr" border="1" cellpadding="4" cellspacing="4">
+    <tr>
+        <th bgcolor="#C0C0C0"><p align="center">Description</p>
+        </th>
+        <th bgcolor="#C0C0C0"><p align="center">URL</p>
+        </th>
+    </tr>
+    <tr>
+        <td>Latest version of Nmap::Scanner</td>
+        <td><a href="http://webwizarddesign.com/nmap/latest.tar.gz">http://webwizarddesign.com/nmap/latest.tar.gz</a></td>
+    </tr>
+    <tr>
+        <td>Version 0.02</td>
+        <td><a
+        href="http://webwizarddesign.com/nmap/Nmap-Scanner-0.02.tar.gz">http://webwizarddesign.com/nmap/Nmap-Scanner-0.02.tar.gz</a></td>
+    </tr>
+    <tr>
+        <td>Version 0.01</td>
+        <td><a
+        href="http://webwizarddesign.com/nmap/Nmap-Scanner-0.01.tar.gz">http://webwizarddesign.com/nmap/Nmap-Scanner-0.01.tar.gz</a></td>
+    </tr>
+</table>
+</div>
+
+<p>Nmap::Scanner is also available via 
+<a href="http://search.cpan.org/search?dist=Nmap">CPAN</a>, 
+the Comprehensive Perl Archive Network. New
+versions will appear here first, as I prefer to have people use
+and test a new version before it goes to the perl repository.</p>
+
+</body>
+</html>
