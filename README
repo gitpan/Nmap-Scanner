@@ -1,0 +1,52 @@
+INSTALLATION
+
+perl Makefile.PL
+make
+make test
+make install
+
+DOCUMENTATION
+
+If you want to view the docs post installation, do
+
+perldoc Nmap::Scanner
+
+then
+
+perldoc Nmap::Scanner::Scanner
+
+to start.
+
+If you want to look pre-install, cd to lib first.
+
+SYNOPSIS
+
+Nmap::Scanner provides perl class wrappers for the network mapping
+tool nmap.  In this release, only what I viewed as the most often
+used options and settings are included ... this is not a full implementation
+of the nmap API, but it is more than enough to do some very useful
+things with the modules.  Over time I am sure the gaps will be filled in.
+
+This module does require that nmap be installed in order to do anything
+useful with it ... when it is installed, put it in your PATH or specify
+where nmap is located using the nmap_location() method of 
+Nmap::Scanner::Scanner.  Get nmap from http://www.insecure.org/nmap/
+
+This module parses the output from -oN ... so there may be inter-version
+bugs (I hope they are few as that will not be an easy thing to handle).  
+A future release will parse the XML output, though that doesn't seem to 
+give the same level of direct feedback the -oN output does, so my event 
+handling may change or decrease.
+
+A good way to get started is to look at the tests and the scripts in the
+examples/ directory.
+
+Please feel free to write me with questions you have about this module
+or feature requests/suggestions.  
+
+Finally, please remember this is the first release of this module, it is likely
+to change somewhat, though I hope to keep the interface very much similar
+to what it is at this point in time.
+
+Max Schubert
+maxs@perldork.com
