@@ -13,21 +13,21 @@ Port - Holds information about a remote port as detected by nmap.
 sub new {
     my $class = shift;
     my $me = {
-        NUMBER => undef, PROTO => undef, STATE => undef, SERVICE => undef
+        PORTID => 0, PROTO => '', STATE => '', SERVICE => undef
     };
     return bless $me, $class;
 }
 
 =pod
 
-=head2 number()
+=head2 portid()
 
 Port number
 
 =cut
 
-sub number {
-    (defined $_[1]) ? ($_[0]->{NUMBER} = $_[1]) : return $_[0]->{NUMBER};
+sub portid {
+    (defined $_[1]) ? ($_[0]->{PORTID} = $_[1]) : return $_[0]->{PORTID};
 }
 
 =pod
@@ -85,15 +85,20 @@ sub as_xml {
 
     my $self = shift;
 
-    return
-        '  <port '.
-        'number="'.    $self->number() .'" '.
-        'owner="'.     $self->owner()  .'" '.
-        'protocol="'.  $self->protocol()  .'" '.
-        'state="'.     $self->state().'" '. '>' .
-                       $self->service()->as_xml() .
-                       '</port>';
+    my $service_xml = "";
+    my $service = $self->service();
 
+    $service_xml = $service->as_xml() if $service;
+
+    my $xml  = '<port ';
+       $xml .= 'protocol="' . $self->protocol() . '" ';
+       $xml .= 'portid="' . $self->portid() . '" >';
+       $xml .= 'owner="' . $self->owner()  . '" ' if $self->owner();
+       $xml .= '<state state="' . $self->state() . '" />';
+       $xml .= $service_xml;
+       $xml .= '</port>';
+
+    return $xml;
 }
 
 1;

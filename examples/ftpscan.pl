@@ -31,9 +31,9 @@ $ftp->register_banner_found_event(
     sub { 
         shift; 
         my @addresses = $_[0]->addresses();
-        print $_[0]->name()," ( ";
+        print $_[0]->hostname()," ( ";
         for my $a (@addresses) {
-            print $a->address()," ";
+            print $a->addr()," ";
         }
         print "): $_[1]\n";
     }

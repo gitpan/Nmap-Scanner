@@ -13,28 +13,28 @@ nmap.
 
 sub new {
     my $class = shift;
-    my $me = {ADDRESS => undef, TYPE => undef};
+    my $me = {ADDR => '', ADDRTYPE => ''};
     return bless $me, $class;
 }
 
 =pod
 
-=head2 address()
+=head2 addr()
 
 =cut
 
-sub address {
-    (defined $_[1]) ? ($_[0]->{ADDRESS} = $_[1]) : return $_[0]->{ADDRESS};
+sub addr {
+    (defined $_[1]) ? ($_[0]->{ADDR} = $_[1]) : return $_[0]->{ADDR};
 }
 
 =pod
 
-=head2 type()
+=head2 addrtype()
 
 =cut
 
-sub type {
-    (defined $_[1]) ? ($_[0]->{TYPE} = $_[1]) : return $_[0]->{TYPE};
+sub addrtype {
+    (defined $_[1]) ? ($_[0]->{ADDRTYPE} = $_[1]) : return $_[0]->{ADDRTYPE};
 }
 
 sub as_xml {
@@ -42,8 +42,8 @@ sub as_xml {
     my $self = shift;
 
     return
-        '  <address address="' . $self->address() .
-        '" type="'    .  $self->type()  .'"/>';
+        '<address addr="' . $self->addr() .
+        '" addrtype="' . $self->addrtype() . '" />';
 
 }
 

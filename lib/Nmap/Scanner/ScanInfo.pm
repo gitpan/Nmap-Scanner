@@ -15,10 +15,10 @@ use strict;
 sub new {
     my $class = shift;
     my $me = { 
-               TYPE        => undef,
-               PROTOCOL    => undef,
-               NUMSERVICES => undef,
-               SERViCES    => undef
+               TYPE        => '',
+               PROTOCOL    => '',
+               NUMSERVICES => '',
+               SERViCES    => ''
              };
     return bless $me, $class;
 }
@@ -67,12 +67,12 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml = "<scan-info";
-    $xml .= ' type="'     . $self->type() . '"';
+    my $xml = "<scaninfo";
+    $xml .= ' type="' . $self->type() . '"';
     $xml .= ' protocol="' . $self->protocol() . '"';
     $xml .= ' numservices="' . $self->numservices() . '"';
     $xml .= ' services="' . $self->services() . '"';
-    $xml .= "/>\n";
+    $xml .= " />\n";
 
     return $xml;
 

@@ -19,8 +19,10 @@ my %HOSTS;
 my $scan = new Nmap::Scanner();
 
 $scan->tcp_syn_scan();
-$scan->add_target($ARGV[0] || 'localhost');
-$scan->add_scan_port($ARGV[1] || '1-1024');
+$scan->add_target($ARGV[0] ||
+                      die "Missing host to scan!\n$0 host ports\n");
+$scan->add_scan_port($ARGV[1] ||
+                      die "Missing ports to scan!\n$0 host ports\n");
 
 my $hosts = $scan->scan()->get_host_list();
 

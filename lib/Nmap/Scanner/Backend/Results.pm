@@ -30,7 +30,7 @@ my $host_list = $results->get_host_list();
 
 while (my $host = $host_list->get_next()) {
 
-    print "Found host named: " . $host->name() . "\n";
+    print "Found host named: " . $host->hostname() . "\n";
     .. etc ..
 
 }
@@ -102,11 +102,10 @@ sub as_xml {
 
     my $self = shift;
 
+    my $tmp = $self->get_host_list()->as_xml();
+
     my $xml = "<?xml version=\"1.0\"?>\n";
-    $xml   .= "<results>\n";
-    $xml   .= "  " . $self->get_host_list()->as_xml();
-    $xml   .= "\n</results>\n";
-    $xml   .= $self->nmap_run()->as_xml();
+    $xml   .= $self->nmap_run()->as_xml($tmp);
 
     return $xml;
 

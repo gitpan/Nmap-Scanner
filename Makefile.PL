@@ -5,6 +5,7 @@ WriteMakefile(
     'NAME'	=> 'Nmap::Scanner',
     'VERSION_FROM' => 'lib/Nmap/Scanner.pm', # finds $VERSION
     'PREREQ_PM' => {
+        'IPC::Open3'         => 0,
         'XML::SAX'           => 0,
         'XML::SAX::PurePerl' => 0
     }

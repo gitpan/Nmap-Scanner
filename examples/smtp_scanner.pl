@@ -28,9 +28,10 @@ sub new {
 use lib 'lib';
 use strict;
 
-my $smtp = SmtpScanner->new($ARGV[0] || 'localhost');
+my $smtp = SmtpScanner->new($ARGV[0] || 
+                                die "Missing host to scan!\n$0 host\n");
 
 $smtp->register_banner_found_event(
-    sub { shift; print $_[0]->name(), 
-                 " (" . ($_[0]->addresses())[0]->address() . "): $_[1]\n"; });
+    sub { shift; print $_[0]->hostname(), 
+                 " (" . ($_[0]->addresses())[0]->addr() . "): $_[1]\n"; });
 $smtp->scan();

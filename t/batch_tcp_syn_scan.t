@@ -17,7 +17,7 @@ $scan->add_scan_port('1-1024');
 $scan->tcp_connect_scan();
 
 my $localhost = $scan->scan()->get_host_list()->get_next();
-ok(sub { $localhost->name() ne '' });
+ok(sub { $localhost->hostname() ne '' });
 
 my $aport = $localhost->get_port_list()->get_next();
-ok($aport->number());
+ok($aport->portid());

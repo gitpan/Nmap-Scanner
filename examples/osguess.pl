@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 
+use lib 'lib';
+
 package OsGuesser;
+
 
 use Nmap::Scanner::Scanner;
 
@@ -45,7 +48,8 @@ use strict;
 
 use Nmap::Scanner;
 
-my $os = OsGuesser->new($ARGV[0] || 'localhost');
+my $os = OsGuesser->new($ARGV[0] || 
+                            die "Missing host to scan!\n$0 host\n");
 $os->callback(\&guessed);
 $os->scan();
 
@@ -53,21 +57,24 @@ sub guessed {
     
     my $self = shift;
     my $host = shift;
-    my $name = $host->name();
-    my $ip   = ($host->addresses())[0]->address();
-    my $os   = $host->os_guess();
+    my $name = $host->hostname();
+    my $ip   = ($host->addresses())[0]->addr();
+    my $os   = $host->os();
 
-    print "Used port ", $os->port_used()->port_id(), " for fingerprint\n";
     print "$name ($ip) looks like ",
         join('/',
-            map { $_->name() . " (" . $_->accuracy() . "%)" } $os->os_matches()
+            map { $_->name() . " (" . $_->accuracy() . "%)" } $os->osmatches()
         ),"\n";
 
     my $u = $os->uptime();
 
     if ($u->seconds() > 0) {
         print "Uptime: ", ($u->seconds()/(24*60*60)),
-              " days (",$u->last_boot(),")\n";
+              " days (",$u->lastboot(),")\n";
     }
+
+    print "Ports used for OS fingerprint: ";
+    print join(', ', map { $_->portid() } $os->ports_used());
+    print "\n";
 
 }

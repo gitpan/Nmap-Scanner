@@ -18,18 +18,12 @@ use strict;
 
 sub new {
     my $class = shift;
-    my $me = { NAME => undef, ADDRESSES => [], PORTS => {} };
+    my $me = { ADDRESSES => [], 
+               PORTS => {}, 
+               SMURF => 0,
+               HOSTNAMES => []  # Nmap::Scanner::Hostname
+    };
     return bless $me, $class;
-}
-
-=pod
-
-=head2 name()
-
-=cut
-
-sub name {
-    (defined $_[1]) ? ($_[0]->{NAME} = $_[1]) : return $_[0]->{NAME};
 }
 
 =pod
@@ -56,8 +50,65 @@ sub addresses {
     return @{$_[0]->{ADDRESSES}};
 }
 
+=pod
+
+=head2 add_hostname()
+
+Add an address to the list of addresses for this host
+
+=cut
+
 sub add_address {
     push(@{$_[0]->{ADDRESSES}}, $_[1]) if $_[1];
+}
+
+=pod
+
+=head2 hostname()
+
+First hostname of the host as determined by nmap (single hostname string).
+
+=cut
+
+sub hostname {
+
+    # this returns the first hostname
+    return @{$_[0]->{HOSTNAMES}}[0]->name() if @{$_[0]->{HOSTNAMES}};
+
+    return "";
+
+}
+
+=head2 hostnames()
+
+Hostnames of the host as determined by nmap (Array of Address references).
+
+=cut
+sub hostnames {
+    return @{$_[0]->{HOSTNAMES}};
+}
+
+=pod
+
+=head2 add_hostname()
+
+Add a hostname to the list of hostnames for this host
+
+=cut
+
+sub add_hostname {
+    push(@{$_[0]->{HOSTNAMES}}, $_[1]) if $_[1];
+}
+
+=head2 smurf()
+
+    True (1) if the host responded to a ping of a broadcast address and
+    is therefore vulnerable to a Smurf-style attack.
+
+=cut
+
+sub smurf {
+    (defined $_[1]) ? ($_[0]->{SMURF} = $_[1]) : return $_[0]->{SMURF};
 }
 
 =pod
@@ -76,7 +127,7 @@ sub extra_ports {
 
 =pod
 
-=head2 os_guess()
+=head2 os()
 
 holds a reference to an Nmap::Scanner::OS object that
 describes the operating system and TCP fingerprint for this
@@ -87,7 +138,7 @@ nmap manual for more details.
 
 =cut
 
-sub os_guess {
+sub os {
     (defined $_[1]) ? ($_[0]->{OS} = $_[1]) : return $_[0]->{OS};
 }
 
@@ -105,7 +156,7 @@ sub add_port {
     return unless defined $port;
 
     Nmap::Scanner::debug("Adding port with proto: " . $port->protocol());
-    $self->{PORTS}->{lc($port->protocol())}->{$port->number()} = $port;
+    $self->{PORTS}->{lc($port->protocol())}->{$port->portid()} = $port;
 }
 
 =pod
@@ -191,44 +242,45 @@ sub get_udp_port_list {
 sub as_xml {
 
     my $self = shift;
-
-    my $xml = 
-        ' <host '.
-        'name="' . $self->name() . '" '.
-        'status="' . $self->status() . "\">\n";
-
+ 
+    my $xml =  '<host>';
+    $xml .= '<status state="' . $self->status() . '" />'."\n";
+  
     for my $addr ($self->addresses()) {
-        $xml .=  "  " .$addr->as_xml() . "\n  ";
+        $xml .= $addr->as_xml() . "\n";
     }
 
-    $xml .=  "  " .$self->os_guess()->as_xml() . "\n  "
-        if defined $self->os_guess();
+    $xml .= '<smurf responses="' . $self->smurf().'" />'."\n" if $self->smurf() > 0;
 
-    $xml .= "  <ports>\n";
+    my $hxml = '';
+    foreach ($self->hostnames()) {
+        $hxml.=$_->as_xml() 
+    } 
+    $xml .= "<hostnames>". $hxml ."</hostnames>\n" if $hxml;
+  
+    $xml .= $self->os()->as_xml() . "\n"
+                if $self->os();
+  
+                
 
-    $xml .= "    <tcp>\n";
-    my $tcp_ports =  $self->get_tcp_port_list();
-    $xml .= $tcp_ports->as_xml() . "\n" if defined $tcp_ports;
-    $xml .= "    </tcp>\n";
+    my $pxml .= $self->extra_ports()->as_xml() ."\n"
+                if $self->extra_ports();
+  
+    my $tcp_ports = $self->get_tcp_port_list();
+    $pxml .= $tcp_ports->as_xml();
+  
+    my $udp_ports = $self->get_udp_port_list();
+    $pxml .= $udp_ports->as_xml();
+  
+    my $protos = $self->get_ip_port_list();
+    $pxml .= $protos->as_xml();
+    
+    $xml .= "<ports>". $pxml ."</ports>\n" if $pxml;
 
-    $xml .= "    <udp>\n";
-    my $udp_ports =  $self->get_udp_port_list();
-    $xml .= $udp_ports->as_xml() . "\n" if defined $udp_ports;
-    $xml .= "    </udp>\n";
-
-
-
-    $xml .= "    <ip>\n";
-    my $protos =  $self->get_ip_port_list();
-    $xml .= $protos->as_xml() . "\n" if defined $protos;
-    $xml .= "    </ip>\n";
-    $xml .= "    " . $self->extra_ports()->as_xml() ."\n"
-                if defined $self->extra_ports();
-    $xml .= "  </ports>\n";
-    $xml .= "  </host>\n";
-
+    $xml .= "</host>\n";
+  
     return $xml;
-
+  
 }
 
 1;

@@ -88,8 +88,10 @@ while (my $host = $hosts->get_next()) {
     }
 
     if (@ports) {
-        print $host->name(),": ", 
-              join(', ',sort map{join('/',$_->service(),$_->protocol())} @ports),
+        print $host->hostname(),": ", 
+              join(', ',sort map{join('/',
+                                 $_->service()->name(),
+                                 $_->protocol())} @ports),
               "\n";
     }
 

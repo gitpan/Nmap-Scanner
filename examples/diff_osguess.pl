@@ -11,9 +11,10 @@ use strict;
 #  Show how to diff scans of OS guesses of two machines easily :)
 #
 
-my $host1 = shift;
+my $HELP = "$0 host1 host2";
 
-my $host2 = shift;
+my $host1 = shift || die "Missing host 1\n$HELP";
+my $host2 = shift || die "Missing host 2\n$HELP";
 
 sub do_scan {
     my $scanner = new Nmap::Scanner;
@@ -27,7 +28,7 @@ sub do_scan {
 
     my $results = $scanner->scan();
 
-    return $results->get_host_list()->get_next()->os_guess()->as_xml();
+    return $results->get_host_list()->get_next()->os()->as_xml();
 
 }
 

@@ -13,7 +13,7 @@ open on a host.
 
 sub new {
     my $class = shift;
-    my $me = {STATE => undef, COUNT => undef};
+    my $me = {STATE => '', COUNT => ''};
     return bless $me, $class;
 }
 
@@ -47,8 +47,8 @@ sub as_xml {
 
     return
         '<extraports '.
-        'state="'   .  $self->state() .'" '.
-        'count="'   .  $self->count()  .'" '. '/>';
+        'state="' . $self->state() . '" ' .
+        'count="' . $self->count() . '" />';
 
 }
 

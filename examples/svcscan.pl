@@ -19,10 +19,14 @@ my %PORTS;
 
 my $scan = new Nmap::Scanner();
 
+$scan->debug(1);
 $scan->tcp_syn_scan();
+$scan->version_scan();
 $scan->udp_scan();
-$scan->add_target($ARGV[0] || 'localhost');
-$scan->add_scan_port($ARGV[1] || '1-1024');
+$scan->add_target($ARGV[0] || 
+                      die "Missing host to scan!\n$0 host ports\n");
+$scan->add_scan_port($ARGV[1] || 
+                      die "Missing ports to scan!\n$0 host ports\n");
 
 my $hosts = $scan->scan()->get_host_list();
 
@@ -30,23 +34,26 @@ my $MAXLEN;
 
 while (my $host = $hosts->get_next()) {
 
-    $MAXLEN = length($host->name()) 
-        if length($host->name()) > $MAXLEN;
+    $MAXLEN = length($host->hostname()) 
+        if length($host->hostname()) > $MAXLEN;
 
     my $ports = $host->get_port_list();
 
     while (my $port = $ports->get_next()) {
         next unless lc($port->state()) eq 'open';
-        my $key = join(':',$port->service()->name(),$port->number(),$port->protocol);
+        my $key = join(':',$port->service()->name(),$port->portid(),$port->protocol,
+                           $port->service()->product(),
+                           $port->service()->version(),
+                           $port->service()->extrainfo());
         $PORTS{$key}++;
-        push(@{$HOSTS{$key}},$host->name());
+        push(@{$HOSTS{$key}},$host->hostname());
     }
 
 }
 
 for my $svc (sort by_port_name keys %PORTS) {
-    my ($n, $p, $proto) = split(':', $svc);
-    print "\n$n ($p/$proto):\n";
+    my ($n, $p, $proto, $product, $version, $extra) = split(':', $svc);
+    print "\n$n ($p/$proto -- $product: $version [$extra]):\n";
 
     my $i = 0;
     

@@ -20,9 +20,16 @@ sub new {
     return bless $self, $class;
 }
 
+#  We get passed a $self reference and
+#  an Nmap::Scanner::Host reference
+
 sub started {
-    die unless scalar(@_) == 4;
+    die unless scalar(@_) == 2;
 }
+
+#  We get passed a $self reference,
+#  an Nmap::Scanner::Host reference,
+#  and an Nmap::Scanner::Port reference
 
 sub port {
     die unless scalar(@_) == 3;
@@ -44,9 +51,9 @@ $scan->add_scan_port('1-1024');
 $scan->tcp_connect_scan();
 
 my $localhost = $scan->scan()->get_host_list()->get_next();
-ok(sub { $localhost->name() ne "" });
+ok(sub { $localhost->hostname() ne "" });
 
 my $aport = $localhost->get_port_list()->get_next();
-ok($aport->number());
+ok($aport->portid());
 
 1;

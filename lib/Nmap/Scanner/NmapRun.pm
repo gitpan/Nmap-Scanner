@@ -19,10 +19,10 @@ sub new {
     my $me = { 
                SCANINFO         => Nmap::Scanner::ScanInfo->new(),
                RUNSTATS         => Nmap::Scanner::RunStats->new(),
-               SCANNER          => undef,
-               ARGS             => undef,
-               START            => undef,
-               VERSION          => undef,
+               SCANNER          => '',
+               ARGS             => '',
+               START            => '',
+               VERSION          => '',
                XMLOUTPUTVERSION => 0,
                VERBOSE          => 0,
                DEBUGGING        => 0
@@ -130,19 +130,28 @@ sub debugging {
 sub as_xml {
 
     my $self = shift;
+    my $hostlist = shift;
 
-    my $xml = "<nmap-run";
-    $xml .= ' verbose="' . $self->verbose() . '"';
+    # missing: verbose debugging
+    my $xml = "<nmaprun";
+
     $xml .= ' scanner="' . $self->scanner() .  '"';
-    $xml .= ' args="'    . $self->args()    . '"';
-    $xml .= ' start="'   . $self->start()   . '"';
+    $xml .= ' args="' . $self->args() . '"';
+    $xml .= ' start="' . $self->start() . '"';
     $xml .= ' version="' . $self->version() . '"';
     $xml .= ' xmloutputversion="' . $self->xmloutputversion() . '"';
-    $xml .= ' debugging="'        . $self->debugging()        . '"';
-    $xml .= "/>\n";
-    $xml .= "  " . $self->run_stats()->as_xml();
-    $xml .= "  " . $self->scan_info()->as_xml();
-    $xml .= "</nmap-run>\n";
+    $xml .= ">\n";
+
+    $xml .= $self->scan_info()->as_xml();
+
+    $xml .= '<verbose level="' . $self->verbose() . '" />'."\n";
+    $xml .= '<debugging level="' . $self->debugging() . '" />'."\n";
+
+    $xml .= $hostlist;
+
+    $xml .= $self->run_stats()->as_xml();
+
+    $xml .= "</nmaprun>\n";
 
     return $xml;
 

@@ -23,17 +23,34 @@ sub new {
 sub process {
     
     my $self = shift;
+    my $pid = shift;
+    my $in = shift;
     my $cmdline = shift;
-
-    local($_);
-    local(*NMAP);
 
     my $handler = NmapHandler->new($self);
     my $parser = XML::SAX::PurePerl->new(Handler => $handler);
 
-    open(NMAP,"$cmdline |") || die "Can't run $cmdline: $!\n";
-    $parser->parse_file(*NMAP);
-    close(NMAP);
+    eval { $parser->parse_file($in) };
+
+    if ($@) {
+        # handle error
+        my $errstr=<$in>;
+
+        print tell($in);
+        warn <<EOF;
+<nmap-error>
+  <pid="$pid"/>
+  <cmdline="$cmdline"/>
+  <perl-msg>$@</perl-msg>
+  <nmap-msg>$errstr</nmap-msg>
+</nmap-error>
+EOF
+        close($in);
+        exit 1;
+
+    }
+
+    close($in);
 
     return $handler->results();
 
@@ -53,6 +70,7 @@ package NmapHandler;
     use XML::SAX::Base;
 
     use Nmap::Scanner::Host;
+    use Nmap::Scanner::Hostname;
     use Nmap::Scanner::Port;
     use Nmap::Scanner::Service;
     use Nmap::Scanner::Address;
@@ -66,6 +84,7 @@ package NmapHandler;
     use Nmap::Scanner::OS;
     use Nmap::Scanner::OS::PortUsed;
     use Nmap::Scanner::OS::Uptime;
+    use Nmap::Scanner::OS::Class;
     use Nmap::Scanner::OS::Match;
     use Nmap::Scanner::OS::TCPSequence;
     use Nmap::Scanner::OS::TCPTSSequence;
@@ -78,8 +97,11 @@ package NmapHandler;
         hosts         => \&hosts,
         status        => \&hoststatus,
         hostname      => \&hostname,
+        smurf         => \&smurf,
         address       => \&hostaddress,
+        hostnames     => \&hostnames,
         port          => \&port,
+        ports         => \&ports,
         state         => \&state,
         service       => \&service,
         owner         => \&owner,
@@ -87,6 +109,7 @@ package NmapHandler;
         extraports    => \&extraports,
         os            => \&os,
         portused      => \&portused,
+        osclass       => \&osclass,
         osmatch       => \&osmatch,
         uptime        => \&uptime,
         tcpsequence   => \&tcpsequence,
@@ -109,6 +132,7 @@ package NmapHandler;
         $self->{NMAP_HOST} = undef;
         $self->{NMAP_RUNSTATS} = undef;
         $self->{NMAP_NMAPRUN} = undef;
+        $self->{PORT_COUNT} = 0;
         $self->{NMAP_OSGUESS} = undef;
         $self->{NMAP_RESULTS} = Nmap::Scanner::Backend::Results->new();
         return bless $self, $class;
@@ -140,7 +164,7 @@ package NmapHandler;
         my ($self, $el) = @_;
         if ($el->{Name} eq 'host') {
             my $host = $self->{NMAP_HOST};
-            $self->{NMAP_HOST}->os_guess($self->{NMAP_OSGUESS})
+            $self->{NMAP_HOST}->os($self->{NMAP_OSGUESS})
                 if $self->{NMAP_OSGUESS};
             $self->{NMAP_RESULTS}->add_host($host);
             $self->{NMAP_BACKEND}->notify_scan_complete($self->{NMAP_HOST});
@@ -149,7 +173,7 @@ package NmapHandler;
             $self->{NMAP_NMAPRUN}->run_stats($self->{NMAP_RUNSTATS});
         } elsif ($el->{Name} eq 'port') {
             my $port = $self->{NMAP_PORT};
-            Nmap::Scanner::debug("Adding port: " . $port->number());
+            Nmap::Scanner::debug("Adding port: " . $port->portid());
             $self->{NMAP_HOST}->add_port($port);
             $self->{PORT_COUNT}++;
             undef $self->{NMAP_PORT};
@@ -180,20 +204,34 @@ package NmapHandler;
 
     sub hostname {
         my ($self, $ref) = @_;
-        if ($self->{NMAP_HOST}->name() eq '') {
-            $self->{NMAP_HOST}->name($ref->{'{}name'}->{Value});
-        } else {
-            $self->{NMAP_HOST}->name(
-                join(',',$self->{NMAP_HOST}->name(), $ref->{'{}name'}->{Value})
-            );
-        }
+        my $host = $self->{NMAP_HOST};
+        my $hostname = Nmap::Scanner::Hostname->new();
+        $hostname->name($ref->{'{}name'}->{Value});
+        $hostname->type($ref->{'{}type'}->{Value});
+        $host->add_hostname($hostname);
     }
+
+    sub hostnames {
+        my $self = shift;
+        #  Do nothing, as this is just an array of hostnames, held in Host object.
+    }
+
+    sub ports {
+        my $self = shift;
+        #  Do nothing, as this is just an array of ports, held in Host object.
+    }
+
+    sub smurf {
+        my ($self, $ref) = @_;
+        my $smurf = $ref->{'{}responses'}->{Value};
+        $self->{NMAP_HOST}->smurf($smurf);
+    }                                    
 
     sub hostaddress {
         my ($self, $ref) = @_;
         my $addr = Nmap::Scanner::Address->new();
-        $addr->address($ref->{'{}addr'}->{Value});
-        $addr->type($ref->{'{}addrtype'}->{Value});
+        $addr->addr($ref->{'{}addr'}->{Value});
+        $addr->addrtype($ref->{'{}addrtype'}->{Value});
         $self->{NMAP_HOST}->add_address($addr);
     }
 
@@ -201,7 +239,7 @@ package NmapHandler;
         my ($self, $ref) = @_;
         my $port = Nmap::Scanner::Port->new();
         $port->protocol($ref->{'{}protocol'}->{Value});
-        $port->number($ref->{'{}portid'}->{Value});
+        $port->portid($ref->{'{}portid'}->{Value});
         $self->{NMAP_PORT} = $port;
     }
 
@@ -227,6 +265,9 @@ package NmapHandler;
         $svc->highver($ref->{'{}highver'}->{Value});
         $svc->method($ref->{'{}method'}->{Value});
         $svc->conf($ref->{'{}conf'}->{Value});
+        $svc->product($ref->{'{}product'}->{Value});
+        $svc->version($ref->{'{}version'}->{Value});
+        $svc->extrainfo($ref->{'{}extrainfo'}->{Value});
         $port->service($svc);
     }
 
@@ -236,7 +277,7 @@ package NmapHandler;
         my $port = Nmap::Scanner::Port->new();
         $port->state($ref->{'{}state'}->{Value});
         $port->protocol($ref->{'{}protocol'}->{Value});
-        $port->number($ref->{'{}portid'}->{Value});
+        $port->portid($ref->{'{}portid'}->{Value});
         $port->owner($ref->{'{}owner'}->{Value})
             if $ref->{'{}owner'};
         $self->{NMAP_BACKEND}->notify_port_found(
@@ -257,6 +298,18 @@ package NmapHandler;
         $self->{NMAP_OSGUESS} = Nmap::Scanner::OS->new();
     }
 
+    sub osclass {
+        my ($self, $ref) = @_;
+        my $os = $self->{NMAP_OSGUESS};
+        my $class = Nmap::Scanner::OS::Class->new();
+        $class->type($ref->{'{}type'}->{Value});
+        $class->vendor($ref->{'{}vendor'}->{Value});
+        $class->osfamily($ref->{'{}osfamily'}->{Value});
+        $class->osgen($ref->{'{}osgen'}->{Value});
+        $class->accuracy($ref->{'{}accuracy'}->{Value});
+        $os->add_os_class($class);
+    }
+    
     sub osmatch {
         my ($self, $ref) = @_;
         my $os = $self->{NMAP_OSGUESS};
@@ -271,9 +324,9 @@ package NmapHandler;
         my $os = $self->{NMAP_OSGUESS};
         my $port = Nmap::Scanner::OS::PortUsed->new();
         $port->state($ref->{'{}state'}->{Value});
-        $port->protocol($ref->{'{}proto'}->{Value});
-        $port->port_id($ref->{'{}portid'}->{Value});
-        $os->port_used($port);
+        $port->proto($ref->{'{}proto'}->{Value});
+        $port->portid($ref->{'{}portid'}->{Value});
+        $os->add_port_used($port);
     }
 
     sub uptime {
@@ -281,7 +334,7 @@ package NmapHandler;
         my $os = $self->{NMAP_OSGUESS};
         my $u = Nmap::Scanner::OS::Uptime->new();
         $u->seconds($ref->{'{}seconds'}->{Value});
-        $u->last_boot($ref->{'{}lastboot'}->{Value});
+        $u->lastboot($ref->{'{}lastboot'}->{Value});
         $os->uptime($u);
     }
 
@@ -293,7 +346,7 @@ package NmapHandler;
         $t->class($ref->{'{}class'}->{Value});
         $t->difficulty($ref->{'{}difficulty'}->{Value});
         $t->values($ref->{'{}values'}->{Value});
-        $os->tcp_sequence($t);
+        $os->tcpsequence($t);
     }
 
     sub tcptssequence {
@@ -302,7 +355,7 @@ package NmapHandler;
         my $t = Nmap::Scanner::OS::TCPTSSequence->new();
         $t->class($ref->{'{}class'}->{Value});
         $t->values($ref->{'{}values'}->{Value});
-        $os->tcp_ts_sequence($t);
+        $os->tcptssequence($t);
     }
 
     sub ipidsequence {
@@ -311,7 +364,7 @@ package NmapHandler;
         my $t = Nmap::Scanner::OS::IPIdSequence->new();
         $t->class($ref->{'{}class'}->{Value});
         $t->values($ref->{'{}values'}->{Value});
-        $os->ip_id_sequence($t);
+        $os->ipidsequence($t);
     }
 
     sub nmaprun {

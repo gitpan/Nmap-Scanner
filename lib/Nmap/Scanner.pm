@@ -90,11 +90,11 @@ Nmap::Scanner - Perform and manipulate nmap scans using perl
       my $port     = shift;
   
       my $name = $host->name();
-      my $addresses = join(',', map {$_->address()} $host->addresses());
+      my $addresses = join(',', map {$_->addr()} $host->addresses());
   
       print "On host $name ($addresses), found ",
             $port->state()," port ",
-            join('/',$port->protocol(),$port->number()),"\n";
+            join('/',$port->protocol(),$port->portid()),"\n";
   
   }
 

@@ -40,10 +40,10 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <tcp-ts-sequence";
+    my $xml  = "<tcptssequence";
        $xml .= ' class="'  . $self->class()  . '" ';
-       $xml .= ' values="' . $self->values() . '" ';
-       $xml .= "/>\n";
+       $xml .= ' values="' . $self->values() . '" ' if $self->values();
+       $xml .= "/>";
 
     return $xml;
 

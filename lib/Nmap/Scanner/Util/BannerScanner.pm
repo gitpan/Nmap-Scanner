@@ -84,12 +84,12 @@ sub banner {
 
 sub get_banner {
 
-    my $host  = (shift->addresses())[0]->address();
+    my $host  = (shift->addresses())[0]->addr();
     my $port  = shift || return;
     my $regex = shift || '.';
     my $send  = shift;
 
-    $port  = $port->number();
+    $port  = $port->portid();
 
     my $server = "";
     local($_);

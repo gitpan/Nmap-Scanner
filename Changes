@@ -1,23 +1,80 @@
-Revision history for Perl extension Nmap::Scanner.
+Revision history:
 
-0.01  Thu Feb  7 20:10:47 EST 2002
-	- First attempt at upload and release.
-0.2   
-    - Added OsGuess class to model OS guess and TCP fingerprint output
-      of nmap; if guess_os() is used in scanner, the host will have
-      an OsGuess member available via the os_guess getter.
-    - Added first version of XML output to Nmap::Scanner ... this is
-      a very lightweight XML output that uses no extra libraries ...
-      each model class has an as_xml() method that produces a string version
-      of itself as valid XML.  I did this so that, regardless of backend,
-      XML output could be retrieved.  Perhpas down the road it will
-      be deprecated once Nmap::Scanner is reading the XML output of
-      nmap.
-    - Bug fix.  Multiple host scan complete events were not being fired
-      properly due to some bad logic in Nmap::Scanner::Backend::Normal.
-      This would cause only the LAST host in a list to trigger the
-      host complete event ... so all Util programs broke as well as
-      any program that uses event-based scanning with multiple hosts.
+0.7
+
+   Will Saxon (WillS --at-- housing dot ufl DOT edu)
+   - Uninitialized value bug in XML.pm, PORT_COUNT attribute.
+
+   Mario Manno (mm AT koeln dot ccc . de)
+   - Many XML fixes to make Nmap::Scanner XML output comply with nmap DTD
+   - Code suggestion to separate method that reads nmap scan
+     from file out of main scan() method.
+   - Added Nmap::Scanner::OS::Class for use with nmap OS guess output
+     to account for multiple OS class guesses that may be generated
+     by using -O switch.
+   - Patched source to deal with 'defined but false' values for XML
+     output where class atributes have not been populated.
+   - Contributed example program that will perform an nmap scan and
+     generate graphs and charts showing the results of the scan
+     (see examples/bannerscan/ directory).
+   - Fix all nmap class names and attributes so they match the names
+     nmap uses in it's XML output.
+   - Alter examples to use new attribute / method names
+
+   Max Schubert
+   - Code clean up after applying patches from Mario.
+   - Perldoc for new methods added by Mario, clean up of some
+     existing perldoc.
+   - Clean up of die() calls in scan_from_file method to make
+     sure messages are clear to user.
+   - Added code to handle <hostnames> child of <host> element and multiple 
+     <hostname> elements, along with Hostname class.
+   - Added stub hostnames and ports routines to Nmap::Scanner::Backend::XML 
+     so that running in debug mode does not show unhandled XML warnings.
+   - Corrected smurf routine mapping so that smurf XML element calls
+     smurf() routine (instead of hostname()) in Nmap::Scanner::Backend::XML.
+   - Changed XML for error output so there are two lines; one is nmap output
+     error string, the other is perl error ($@) as eval{} will catch perl
+     runtime errors too.
+   - Altered examples/osguess.pl to work with new module/class names.
+   - Add code to handle multiple OS guess ports (Bug 906269)
+   - Alter examples to use new attribute / method names
+   - Alter tests to use new attribute / method names
+
+0.6.1
+    - Set up mailing list and fixed link to it in README file .. thanks to
+          Andrew Thornton (ThorntonA /AT/ nv -dot- doe -dot- gov for pointing
+                        out the bad URL in the file.
+    - David Klann grunch _AHT_ klann daw-T cx -- patch to 
+      Nmap/Scanner/Scanner.pm to properly anchor nmap binary search in
+      _find_nmap routine.
+0.6 
+    - Jon Amundsen (jamundsen - at - jamundsen dot dydns -dot- org).  
+        * Fix for path with spaces and Win32 (cygwin) nmap search in PATH by 
+          Jon Amundsen
+    - Anthony Persaud (Anthony_Persaud -at- cargill dot com)
+        * Tell users defaults are being used and what they are for example 
+          scripts
+        * Return $self for object chaining where possible in 
+          Nmap::Scanner::Scanner
+        * Make add_* methods and delete* methods take arrays of args.
+        * Add open_nmap() method to Nmap::Scanner::Scanner to allow user to just
+          use Nmap::Scanner::Scanner as front end option processor .. this 
+          method returns the pid of the newly opened nmap process, and the 
+          reader, writer, and error filehandle attached to the nmap pipe; 
+          uses IPC::Open3.
+    - Add support for -sV switch:
+        * version_scan() switch in Nmap::Scanner::Scanner
+        * Add mutators for version, product, and extrainfo to 
+          Nmap::Scanner::Service
+    - Jasmin L<E9>vesque (jlevesque -At- crosemont.qc _DOT_ ca)
+        * Add support for parsing/outputting smurf detection.
+    - Change process() method of Nmap::Scanner::Backend::Processor to 
+      start_nmap().  This method just opens a pipe to nmap; it returns the 
+      pid, reader, writer and error filehandles to the caller.  Caller is 
+      responsible for processing errors from nmap.  I changed this so that 
+      the backend-processor could produce an error message in the appropriate 
+      format.
 0.5
     - Changed to using the XML output format from nmap.
     - Changed object model to match the XML output.
@@ -26,9 +83,13 @@ Revision history for Perl extension Nmap::Scanner.
     - Added more examples.
     - Eliminated all "normal" output processors and the Factory sub-package, as
       it is not needed anymore.
-    - Eliminated Protocol and ProtocolList models as XML output defines protocols
-      as ports of type IP.
-    - Changed tests to ONLY use tcp connect scans so we don't have install problems
-      for non-root users (reported to me by the CPAN testers .. thanks!)
-    - Eliminated all Nmap::Scanner::Util modules except BannerScanner .. moved others
-      into examples/ as they really aren't core.
+    - Eliminated Protocol and ProtocolList models as XML output defines 
+      protocols as ports of type IP.
+    - Changed tests to ONLY use tcp connect scans so we don't have install 
+      problems for non-root users (reported to me by the CPAN testers .. 
+      thanks!)
+    - Eliminated all Nmap::Scanner::Util modules except BannerScanner .. 
+      moved others into examples/ as they really aren't core.
+0.2   
+0.01  -- February, 2002
+	- First attempt at upload and release.

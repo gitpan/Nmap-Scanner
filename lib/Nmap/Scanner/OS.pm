@@ -14,6 +14,7 @@ is used as an option with the Nmap::Scanner::Scanner instance.
 
 use strict;
 use Nmap::Scanner::OS::Match;
+use Nmap::Scanner::OS::Class;
 use Nmap::Scanner::OS::PortUsed;
 use Nmap::Scanner::OS::Uptime;
 use Nmap::Scanner::OS::TCPSequence;
@@ -22,8 +23,9 @@ use Nmap::Scanner::OS::IPIdSequence;
 
 sub new {
     my $class = shift;
-    my $me = { PORTUSED     => Nmap::Scanner::OS::PortUsed->new(),     
+    my $me = { PORTSUSED    => [],  # Nmap::Scanner::OS::PortUsed array
                OSMATCHES    => [], 
+               OSCLASSES    => [], 
                UPTIME       => Nmap::Scanner::OS::Uptime->new(),       
                TCPSEQUENCE  => Nmap::Scanner::OS::TCPSequence->new(),
                TCPTSEQUENCE => Nmap::Scanner::OS::TCPTSSequence->new(), 
@@ -34,19 +36,31 @@ sub new {
 
 =pod
 
-=head2 port_used()
+=head2 ports_used()
 
-The open port used to try and fingerprint the remote OS.
+The open ports used to try and fingerprint the remote OS.
 
 =cut
 
-sub port_used {
-    (defined $_[1]) ? ($_[0]->{PORTUSED} = $_[1]) : return $_[0]->{PORTUSED};
+sub ports_used {
+    (defined $_[1]) ? ($_[0]->{PORTSUSED} = $_[1]) : return @{$_[0]->{PORTSUSED}};
 }
 
 =pod
 
-=head2 os_matches()
+=head2 add_port_used()
+
+Add a port to the list of ports used to try and fingerprint the remote hosts' OS.
+
+=cut
+
+sub add_port_used {
+    push(@{$_[0]->{PORTSUSED}}, $_[1]);
+}
+
+=pod
+
+=head2 osmatches()
 
 Object representing nmaps' best attempt to fingerprint the remote OS.
 
@@ -56,8 +70,16 @@ sub add_os_match {
     push(@{$_[0]->{OSMATCHES}}, $_[1]);
 }
 
-sub os_matches {
+sub osmatches {
     return @{$_[0]->{OSMATCHES}};
+}
+
+sub add_os_class {
+    push(@{$_[0]->{OSCLASSES}}, $_[1]);
+}
+
+sub osclasses {
+    return @{$_[0]->{OSCLASSES}};
 }
 
 =pod
@@ -74,15 +96,15 @@ sub uptime {
     (defined $_[1]) ? ($_[0]->{UPTIME} = $_[1]) : return $_[0]->{UPTIME};
 }
 
-sub tcp_sequence {
+sub tcpsequence {
     (defined $_[1]) ? ($_[0]->{TCPSEQUENCE} = $_[1]) : return $_[0]->{TCPSEQUENCE};
 }
 
-sub tcp_ts_sequence {
+sub tcptssequence {
     (defined $_[1]) ? ($_[0]->{TCPTSSEQUENCE} = $_[1]) : return $_[0]->{TCPTSSEQUENCE};
 }
 
-sub ip_id_sequence {
+sub ipidsequence {
     (defined $_[1]) ? ($_[0]->{IPIDSEQUENCE} = $_[1]) : return $_[0]->{IPIDSEQUENCE};
 }
 
@@ -90,22 +112,36 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml = "<osguess>\n";
-    $xml .= "  " . $self->port_used()->as_xml() .  "\n";
+    #  No fingerprinting happened if no ports found to fingerprint with.
+    return unless scalar($self->ports_used()) > 0;
 
-    for my $m ($self->os_matches()) {
-        $xml .= "  " . $m->as_xml() .  "\n";
+    my $xml = "<os>";
+
+    for my $port ($self->ports_used()) {
+        $xml .= $port->as_xml() . "\n";
     }
 
-    $xml .= "  " . $self->uptime()->as_xml() .  "\n"
-        if $self->uptime();
-    $xml .= "  " . $self->tcp_sequence()->as_xml() .  "\n"
-        if $self->tcp_sequence();
-    $xml .= "  " . $self->tcp_ts_sequence()->as_xml() .  "\n" 
-        if $self->tcp_ts_sequence();
-    $xml .= "  " . $self->ip_id_sequence()->as_xml() .  "\n"
-        if $self->ip_id_sequence();
-    $xml .= "</osguess>\n";
+    for my $m ($self->osclasses()) {
+        $xml .= $m->as_xml() . "\n";
+    }
+
+    for my $m ($self->osmatches()) {
+        $xml .= $m->as_xml() . "\n";
+    }
+
+    $xml .= "</os>\n";
+
+    $xml .= $self->uptime()->as_xml() . "\n"
+        if $self->uptime()->seconds();
+
+    $xml .= $self->tcpsequence()->as_xml() . "\n"
+        if $self->tcpsequence()->class();
+
+    $xml .= $self->tcptssequence()->as_xml() . "\n" 
+        if $self->tcptssequence();
+
+    $xml .= $self->ipidsequence()->as_xml() . "\n"
+        if $self->ipidsequence()->class();
 
     return $xml;
 

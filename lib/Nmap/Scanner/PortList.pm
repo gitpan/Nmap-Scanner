@@ -54,7 +54,7 @@ sub as_xml {
 
     while ($_ = $self->get_next()) {
         last unless defined $_;
-        $xml .= "    " . $_->as_xml() . "\n";
+        $xml .= $_->as_xml() . "\n";
     }
 
     return $xml;

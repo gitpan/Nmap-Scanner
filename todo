@@ -1,6 +1,5 @@
 TODO:
 
-EVENTS:
-
-Update examples, update docs, clean out Normal backend etc.
-
+1) Add code to search for different XML SAX parsers to use in XML.pm 
+   .. start with XML::SAX, then go to PurePerl ... if interfaces are 
+   the same.

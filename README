@@ -33,37 +33,38 @@ before you can use this module.  Please make sure to use a version that is
 at or newer than 3.10ALPHA4, as I contributed a few small patches to output
 the port found messages nmap outputs as it is running in XML format.
 
-Older versions (as far back as 2.54BETA32) should work with this module, but the
-port found events will not not be seen.
+Older versions (as far back as 2.54BETA32) should work with this module, but 
+the port found events will not not be seen; for those to work correctly, 
+please use a version of nmap NEWER than 3.21.
 
-This version, and all versions forward, will only parse the XML output
-from nmap (-oX -) as that is the most stable output format from nmap and
-will change very little compared to the other output formats (according
-to Fyodor, the author of nmap).
+This version, only parses the XML output from nmap (-oX -) as that is the most 
+stable output format from nmap and will change very little compared to the 
+other output formats (according to Fyodor, the author of nmap).
 
 I contributed a few very minor patches to the nmap project in order to get
-the port found event to produce XML output (the "normal" format is the only other
-output format that shows this event) ... this allows me to continue to refine
-both the event-based and batch mode scanning model.
+the port found event to produce XML output (the "normal" format is the only 
+other output format that shows this event) ... this allows me to continue to 
+refine both the event-based and batch mode scanning model.
 
-The XML output is structured much differently than the normal output was,
-so the object model for Nmap::Scanner has changed pretty significantly from
-the previous two releases.  Fortunuately, the other two releases were so unstable due
-to the instability of the "normal" output mode that I think very few people
-actually used those two versions of Nmap::Scanner. ;)
-
-I am also considering giving up matching nmap switches with methods as the options
-change frequently .. this version lets the user pass all nmap scanning flags to the
-scan method ...
+This module lets the user pass all nmap scanning flags to the scan method:
 
 my $scanner = Nmap::Scanner->new();
+my $results = $scanner->scan('-sS -P0 -O');
 
-my @hosts = $scanner->scan('-sS -P0 -O');
+Hopefully this will make the module more useful to people who are already 
+familiar with nmap.  
 
-Hopefully this will also make the module more useful to people who are already
-familiar with nmap.  Most likely all scan option methods will disappear next release
-unless I hear otherwise from users .. the scan($option) will be the way to start 
-a scan if that is the case.
+Nmap::Scanner still does support some setter-style option methods.  I had
+some very productive discussions with Anthony Persaud about them, as I was
+thinking of dropping them altogether; he convinced me that some people do like 
+them.  I also changed all Nmap::Scanner setters in the Nmap::Scanner::Scanner 
+class so they return $self to allow for chaining, again after some good 
+discussing/arguing with Anthony :).
+
+If you are interested in making suggestions, reporting bugs, etc, please 
+join the nmap-scanner mailing list at
+
+http://webwizarddesign.com/mailman/listinfo/nmap-scanner
 
 Please feel free to email me with nmap-scanner related questions, comments, and
 criticisms.  All feedback is welcomed.

@@ -1,19 +1,25 @@
 #!/usr/bin/perl
 
-use lib 'lib';
+use strict;
 
+use lib 'lib';
 use Nmap::Scanner;
 
-use strict;
+my $HELP = "$0 target_spec port_spec";
+
+my $targets = shift || die "Missing targets (e.g. \"192.168.1.*\")\n$HELP";
+my $ports = shift || die "Missing ports to scan (e.g. 1-1024)\n$HELP";
 
 my $scanner = new Nmap::Scanner;
 
+$scanner->add_target($targets);
+
 $scanner->tcp_syn_scan();
 #$scanner->debug(1);
-$scanner->add_scan_port('22,80');
+$scanner->add_scan_port($ports);
 $scanner->ack_icmp_ping();
 $scanner->guess_os();
-$scanner->add_target($ARGV[0] || 'localhost');
+$scanner->add_target($ARGV[0]);
 $scanner->max_rtt_timeout(2000);
 $scanner->register_scan_complete_event(\&scan_complete);
 $scanner->register_scan_started_event(\&scan_started);
@@ -24,15 +30,15 @@ sub scan_complete {
     my $self = shift;
     my $host = shift;
 
-    print "Finished scanning ", $host->name(),"\n";
+    print "Finished scanning ", $host->hostname(),"\n";
 
-    for my $match ($host->os_guess()->os_matches()) {
+    for my $match ($host->os()->osmatches()) {
         print "Host is of type: " . $match->name(),"\n";
         printf "Nmap is %d%% sure of this\n", $match->accuracy();
     }
 
-    print "Host has been up since " . $host->os_guess->uptime()->last_boot()."\n"
-            if defined $host->os_guess()->uptime->last_boot();
+    print "Host has been up since " . $host->os->uptime()->lastboot()."\n"
+            if defined $host->os()->uptime->lastboot();
 
 }
 
@@ -40,10 +46,11 @@ sub scan_started {
     my $self = shift;
     my $host = shift;
 
-    my $hostname = $host->name();
-    my $ip       = ($host->addresses)[0]->address();
+    my $hostname = $host->hostname();
+    my $ip       = ($host->addresses)[0]->addr();
     my $status   = $host->status;
 
     print "$hostname ($ip) is $status\n";
 
 }
+

@@ -13,6 +13,7 @@ guess.
 =cut
 
 use strict;
+use HTML::Entities;
 
 sub new {
     my $class = shift;
@@ -49,10 +50,10 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <match";
-       $xml .= ' name="'  . $self->name()  . '" ';
+    my $xml  = "<osmatch";
+       $xml .= ' name="'  . encode_entities($self->name())  . '" ';
        $xml .= ' accuracy="' . $self->accuracy() . '" ';
-       $xml .= "/>\n";
+       $xml .= "/>";
 
     return $xml;
 

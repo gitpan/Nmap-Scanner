@@ -30,13 +30,13 @@ sub seconds {
 
 =pod
 
-=head2 last_boot()
+=head2 lastboot()
 
 Time/date of last boot
 
 =cut
 
-sub last_boot {
+sub lastboot {
     (defined $_[1]) ? ($_[0]->{LASTBOOT} = $_[1]) : return $_[0]->{LASTBOOT};
 }
 
@@ -44,10 +44,10 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <uptime";
+    my $xml  = "<uptime";
        $xml .= ' seconds="'  . $self->seconds()  . '" ';
-       $xml .= ' last-boot="' . $self->last_boot() . '" ';
-       $xml .= "/>\n";
+       $xml .= ' lastboot="' . $self->lastboot() . '" ';
+       $xml .= "/>";
 
     return $xml;
 

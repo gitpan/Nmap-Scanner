@@ -9,6 +9,7 @@ This is the base class for output processors for Nmap::Scanner.
 =cut
 
 use strict;
+use IPC::Open3;
 
 sub new {
     my $class = shift;
@@ -70,7 +71,7 @@ Nmap::Scanner::Host instance.
 =cut
 
 sub register_host_closed_event {
-    $_[0]->{'SCAN_STARTED_EVENT'} = $_[1];
+    $_[0]->{'HOST_CLOSED_EVENT'} = $_[1];
 }
 
 =pod
@@ -134,18 +135,100 @@ sub debug {
 
 =pod
 
-=head1 process()
+=head1 start_nmap()
 
-This method is called on the sub-classed processor to tell it to
-start processing output.  It is passed the command line arguments
-to be used with nmap.
+This method may be called by the user.  It starts the nmap process using 
+the options set by the user via the scan() method or setters of 
+Nmap::Scanner::Scanner.  The method returns the PID of the child 
+nmap process, a reader handle to read from the nmap process, 
+a write handle to write to nmap, and an error handle which will 
+contain data if nmap throws an error.
 
-=cut
+Example code:
 
 sub process {
 
-    die "Interface only; define in sub-class!\n";
+    my $self = shift;
+    my $cmdline = shift;
 
+    my ($pid, $in, $out, $err) = $self->SUPER::start_nmap($cmdline);
+
+    #  Process filehandles
+
+}
+
+=cut
+
+sub start_nmap {
+
+    my $self = shift;
+    my $cmdline = shift;
+
+    local(*READ, *WRITE, *ERROR);
+
+    my $pid = 0;
+
+    my $read = *READ;
+
+    if (-f $cmdline) {
+        open(READ, "+< $cmdline") ||
+            die "Can't read from input file $cmdline: $!\n";
+        *WRITE = *READ;
+        my $error = "";
+        open(ERROR, '<', \$error);
+    } else {
+        $pid = open3(\*WRITE, \*READ, \*ERROR, $cmdline) ||
+                     die "Can't open pipe to $cmdline: $!\n";
+        $read->flush();
+    }
+
+    my $write = *WRITE;
+    my $error = *ERROR;
+    
+    return ($pid, $read, $write, $error);
+    
+}
+
+=head1 start_nmap2()
+
+This method is called by the sub-classed processor to start the nmap 
+process using options set by the user via the scan() method or 
+setters of Nmap::Scanner::Scanner.  The sub-classed processor is 
+returned the PID of the child nmap process and a reader handle to read
+from the nmap process.
+
+Example code:
+
+sub process {
+
+    my $self = shift;
+    my $cmdline = shift;
+
+    my ($pid, $in) = $self->SUPER::start_nmap2($cmdline);
+
+    #  Process filehandles
+
+}
+
+=cut
+sub start_nmap2{
+
+    my $self = shift;
+    my $cmdline = shift;
+
+    local(*READ);
+
+    my $pid = open(\*READ, "-|", "$cmdline 2>&1");
+    unless (defined $pid) {
+                  die "Can't open pipe to nmap: $!\n";
+          }
+
+    my $read = *READ;
+    $read->flush();
+
+    
+    return ($pid, $read);
+    
 }
 
 =pod
@@ -161,14 +244,16 @@ instance.
 =cut
 
 sub notify_scan_started {
+
     &{$_[0]->{'SCAN_STARTED_EVENT'}->[1]}(
         $_[0]->{'SCAN_STARTED_EVENT'}->[0], $_[1]
-    ) if (defined $_[0]->{'SCAN_STARTED_EVENT'}->[1]);
+    ) if defined $_[0]->{'SCAN_STARTED_EVENT'}->[1];
+
 }
 
 =pod
 
-=head1 notify_scan_started()
+=head1 notify_scan_complete()
 
 Notify the listener that a scan complete
 event has occurred.  Caller is passed a

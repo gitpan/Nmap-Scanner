@@ -15,31 +15,65 @@
 <p align="left">Nmap::Scanner is a
 set of perl classes that provide a programmatic interface to the <a
 href="http://www.insecure.org/nmap/">nmap</a> port
-scanning tool. Nmap does not at this point expose itself as a DLL or
-a shared object, so Nmap::Scanner parses the output from nmap as it runs. 
-This is not ideal, but it works.</p>
+scanning tool. Nmap::Scanner parses the output from nmap as it runs. 
+This is not ideal, but it is maintainable and keeps wrapper class sets
+like my own from having to be too tightly tied to the nmap source.</p>
 
 <p align="left"><a href="http://www.insecure.org/nmap/">Nmap</a>
  provides several output formats; Nmap::Scanner
-parses the output of the &quot;normal&quot; format 
-(<code>-oN</code>).I use this format because in super-verbose mode 
+parses the output of the &quot;XML&quot; format 
+(<code>-oX</code>).I use this format because in super-verbose mode 
 (<code>-v -v -v</code>) nmap outputs a large amount of information 
 during the scan about what is happening.  This allows me to hook callbacks 
 into the output stream and allows me to provide an event-driven programming 
 model option for Nmap::Scanner users.</p>
 
-<p align="left">As of the BetA 2.54
-version, the XML output from nmap does not include the same
-&quot;live&quot; information that the normal output does in super-verbose
-mode, which means the callback functionality becomes crippled if
-I parse the XML. This is a shame because the XML output is
-supposed to be more stable and parsing it is easier.  Hopefully 
-as nmap development continues this will change. A bigger hope 
-is that someone will produce a DLL or shared object version of 
-nmap so that any scripting language that supports DLL/.so -&gt; 
-script glue can create a nice, efficient, OO interface to nmap. 
-Once I learn C and the nmap source well enough I will take a stab 
-at this.</p>
+<p align="left">
+<table align="center" border="5" cellspacing="5" cellpadding="5">
+<tr>
+<td>
+<div align="center"><h3>IMPORTANT: Nmap::Scanner Version .5 and nmap bug</h3></div>
+<p>
+On Wed, 09 Apr 2003 13:28:35 PDT, NNNNN NNNNN wrote:</br>
+&gt; I'm using version 0.5 and seem to be having a small issue.  I'm getting</br>
+&gt; each result twice.</br>
+</p>
+<p align="left">
+A patch I did to add the nmap XML &lt;addport&gt; output didn't quite
+go right (I messed it up) so the addport line was added twice in the 
+corresponding .c source file from nmap :(.
+
+    Please use this version (3.21) or LATER, which has the dup line removed:<p>
+
+    <a href="http://download.insecure.org/nmap/dist/nmap-frontend-3.21CSW-1.i386.rpm">3.21 RPM for nmap-FE</a><br>
+
+    <a href="http://download.insecure.org/nmap/dist/nmap-3.21CSW-1.src.rpm">3.21 Source RPM</a><br>
+    <a href="http://download.insecure.org/nmap/dist/nmap-3.21CSW-1.i386.rpm">3.21 RPM</a><br>
+    <a href="http://download.insecure.org/nmap/dist/nmap-3.21CSW.tar.bz2">3.21 BZ2 compressed source</a><br>
+    <a href="http://download.insecure.org/nmap/dist/nmap-3.21CSW.tar.gz">3.21 tar.gz source</a><br><br>
+
+    Sorry for the inconvenience.
+</p>
+</td>
+</tr>
+</table>
+
+
+<p align="left">Versions earlier than .5 parsed the 'normal' output from
+nmap.  This was very unstable.  All present and future versions will parse
+the XML output as that is much more stable and easy to parse.
+</p>
+<p>Please note that versions from .5 on require that you use an nmap that
+is of version 3.10 or later.  I had to submit some very small patches for
+the XML output of nmap in order to get the same information the 'normal'
+mode emitted for port found events.  Versions previous to 3.10 will most
+likely still work but 'port found' event functionality will be missing.
+</p>
+
+<p>Please also note that this module set requires both
+   XML::SAX and XML::SAX::PurePerl be installed in order for the XML
+   parsing to work; both of these modules can be downloaded and 
+   installed from CPAN by hand or by using the CPAN perl module.</p>
 
 <h3 align="center"><u>Downloads</u></h3>
 <div align="center">
@@ -52,23 +86,28 @@ at this.</p>
     </tr>
     <tr>
         <td>Latest version of Nmap::Scanner</td>
-        <td><a href="http://webwizarddesign.com/nmap/latest.tar.gz">http://webwizarddesign.com/nmap/latest.tar.gz</a></td>
+        <td><a href="latest.tar.gz">latest.tar.gz</a></td>
+    </tr>
+    <tr>
+        <td>Version 0.5</td>
+        <td><a
+        href="Nmap-Scanner-0.5.tar.gz">Nmap-Scanner-0.5.tar.gz</a></td>
     </tr>
     <tr>
         <td>Version 0.02</td>
         <td><a
-        href="http://webwizarddesign.com/nmap/Nmap-Scanner-0.02.tar.gz">http://webwizarddesign.com/nmap/Nmap-Scanner-0.02.tar.gz</a></td>
+        href="Nmap-Scanner-0.02.tar.gz">Nmap-Scanner-0.02.tar.gz</a></td>
     </tr>
     <tr>
         <td>Version 0.01</td>
         <td><a
-        href="http://webwizarddesign.com/nmap/Nmap-Scanner-0.01.tar.gz">http://webwizarddesign.com/nmap/Nmap-Scanner-0.01.tar.gz</a></td>
+        href="Nmap-Scanner-0.01.tar.gz">Nmap-Scanner-0.01.tar.gz</a></td>
     </tr>
 </table>
 </div>
 
 <p>Nmap::Scanner is also available via 
-<a href="http://search.cpan.org/search?dist=Nmap">CPAN</a>, 
+<a href="http://search.cpan.org/search?dist=Nmap-Scanner">CPAN</a>, 
 the Comprehensive Perl Archive Network. New
 versions will appear here first, as I prefer to have people use
 and test a new version before it goes to the perl repository.</p>

@@ -36,14 +36,12 @@ sub as_xml {
 
     local($_);
 
-    my $xml = "<hosts>\n";
+    my $xml;
 
     while ($_ = $self->get_next()) {
         last unless defined $_;
-        $xml   .= "  " . $_->as_xml();
+        $xml .= $_->as_xml();
     }
-
-    $xml .= "  </hosts>\n";
 
     return $xml;
 

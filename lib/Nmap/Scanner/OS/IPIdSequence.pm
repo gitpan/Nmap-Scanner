@@ -40,10 +40,10 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <ip-id-sequence";
+    my $xml  = "<ipidsequence";
        $xml .= ' class="'  . $self->class()  . '" ';
        $xml .= ' values="' . $self->values() . '" ';
-       $xml .= "/>\n";
+       $xml .= "/>";
 
     return $xml;
 

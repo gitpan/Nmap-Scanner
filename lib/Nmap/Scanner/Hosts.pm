@@ -13,7 +13,7 @@ nmap.
 
 sub new {
     my $class = shift;
-    my $me = {UP => undef, DOWN => undef, TOTAL => undef};
+    my $me = {UP => 0, DOWN => 0, TOTAL => 0};
     return bless $me, $class;
 }
 
@@ -57,11 +57,9 @@ sub as_xml {
 
     my $self = shift;
 
-    return
-        '  <hosts '.
-        'up="'   .  $self->up() .'" '.
-        'down="' .  $self->down()  .'" '.
-        'total="'   .  $self->total()  .'" '. '/>';
+    return '<hosts up="' . $self->up() . '" ' .
+           'down="' . $self->down() . '" ' .
+           'total="' . $self->total() . '" />';
 
 }
 

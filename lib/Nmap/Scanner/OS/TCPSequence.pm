@@ -62,12 +62,12 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <tcp-sequence";
+    my $xml  = "<tcpsequence";
        $xml .= ' index="'  . $self->index()  . '" ';
        $xml .= ' class="'  . $self->class()  . '" ';
        $xml .= ' difficulty="'  . $self->difficulty()  . '" ';
        $xml .= ' values="' . $self->values() . '" ';
-       $xml .= "/>\n";
+       $xml .= "/>";
 
     return $xml;
 

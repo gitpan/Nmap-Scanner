@@ -51,14 +51,14 @@ See examples/ directory in the distribution for many more)
   
   while (my $host = $hosts->get_next()) {
   
-      print "On " . $host->name() . ": \n";
+      print "On " . $host->hostname() . ": \n";
   
       my $ports = $host->get_port_list();
   
       while (my $port = $ports->get_next()) {
           print join(' ',
               'Port',
-              $port->service() . '/' . $port->number(),
+              $port->service() . '/' . $port->portid(),
               'is in state',
               $port->state(),
               "\n"
@@ -96,6 +96,7 @@ host_done($self, $host);
 
 sub register_scan_complete_event {
     $_[0]->{'SCAN_COMPLETE_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
 }
 
 =pod
@@ -113,6 +114,7 @@ scan_started($self, $host);
 
 sub register_scan_started_event {
     $_[0]->{'SCAN_STARTED_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
 }
 
 =pod
@@ -132,6 +134,7 @@ host_closed($self, $host);
 
 sub register_host_closed_event {
     $_[0]->{'HOST_CLOSED_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
 }
 
 =pod
@@ -149,6 +152,7 @@ port_found($self, $host, $port);
 
 sub register_port_found_event {
     $_[0]->{'PORT_FOUND_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
 }
 
 =pod
@@ -168,6 +172,7 @@ port_found($self, $host, $extra_ports);
 #  Function pointer that receives host name, IP, and status of all ports
 sub register_no_ports_open_event {
     $_[0]->{'NO_PORTS_OPEN_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
 }
 
 =pod
@@ -193,6 +198,7 @@ nmap command line and exit when scan() is called.
 
 sub norun {
     $_[0]->{'NORUN'} = $_[1];
+    return $_[0];
 }
 
 =pod
@@ -229,6 +235,8 @@ Nmap::Scanner::Port object references of type ip.
 
 =head2 window_scan()
 
+=head2 version_scan()
+
 =head2 rpc_scan()
 
 XXX:  Need to implement code to support the results returned from
@@ -238,26 +246,32 @@ this.  START HERE in man page.
 
 sub use_interface {
     $_[0]->{OPTS}->{'-e'} = shift;
+    return $_[0];
 }
 
 sub tcp_connect_scan {
     $_[0]->{TYPE} = 'T';
+    return $_[0];
 }
 
 sub tcp_syn_scan {
     $_[0]->{TYPE} = 'S';
+    return $_[0];
 }
 
 sub fin_scan {
     $_[0]->{TYPE} = 'F';
+    return $_[0];
 }
 
 sub xmas_scan {
     $_[0]->{TYPE} = 'X';
+    return $_[0];
 }
 
 sub null_scan {
     $_[0]->{TYPE} = 'N';
+    return $_[0];
 }
 
 sub ping_scan {
@@ -266,27 +280,40 @@ sub ping_scan {
 
 sub udp_scan {
     $_[0]->{UDPSCAN} = 'U';
+    return $_[0];
 }
 
 sub protocol_scan {
     $_[0]->{TYPE} = 'O';
+    return $_[0];
 }
 
 sub idle_scan {
     $_[0]->{TYPE} = "I $_[1]";
     $_[0]->{TYPE} .= ":$_[2]" if $_[2];
+    return $_[0];
 }
 
 sub ack_scan {
     $_[0]->{TYPE} = 'A';
+    return $_[0];
 }
 
 sub window_scan {
     $_[0]->{TYPE} = 'W';
+    return $_[0];
 }
 
 sub rpc_scan {
     $_[0]->{RPCSCAN} = 'R';
+    return $_[0];
+}
+
+sub version_scan {
+
+    $_[0]->{'OPTS'}->{'-sV'} = '';
+
+    return $_[0];
 }
 
 =pod
@@ -308,19 +335,37 @@ ports you specified with add_scan_port().
 =cut
 
 sub add_scan_port {
-    $_[0]->{PORTS}->{$_[1]} = 1;
+
+    my $self = shift;
+
+    for my $port_spec (@_) {
+        $self->{PORTS}->{$port_spec} = 1;
+    }
+
+    return $self;
 }
 
 sub delete_scan_port {
-    delete $_[0]->{'PORTS'}->{$_[1]} if 
-        exists $_[0]->{'PORTS'}->{$_[1]};
+
+    my $self = shift;
+
+    for my $port_spec (@_) {
+        delete $self->{'PORTS'}->{$port_spec} if 
+            exists $self->{'PORTS'}->{$port_spec};
+    }
+
+    return $self;
 }
 
 sub reset_scan_ports {
+
     $_[0]->{PORTS} = undef;
+
+    return $_[0];
 }
 
 sub getports {
+
     return $_[0]->{PORTS};
 }
 
@@ -343,16 +388,37 @@ with add_target().
 =cut
 
 sub add_target {
-    $_[0]->{'TARGETS'}->{$_[1]} = 1;
+
+    my $self = shift;
+
+    for my $host_spec (@_) {
+        $self->{'TARGETS'}->{$host_spec} = 1;
+    }
+
+    return $self;
 }
 
 sub delete_target {
-    delete $_[0]->{'TARGETS'}->{$_[1]} if 
-        exists $_[0]->{'TARGETS'}->{$_[1]};
+
+    my $self = shift;
+
+    for my $host_spec (@_) {
+
+        $self->{'TARGETS'}->{$host_spec} = 1;
+
+        delete $self->{'TARGETS'}->{$host_spec} if 
+            exists $self->{'TARGETS'}->{$host_spec};
+
+    }
+
+    return $self;
 }
 
 sub reset_targets {
+
     $_[0]->{'TARGETS'} = undef;
+
+    return $_[0];
 }
 
 =pod
@@ -382,23 +448,38 @@ specified.
 =cut
 
 sub no_ping {
+
     $_[0]->{'OPTS'}->{'-P'} = "0";
+
+    return $_[0];
 }
 
 sub ack_ping {
+
     $_[0]->{'OPTS'}->{'-P'} = "T$_[1]";
+
+    return $_[0];
 }
 
 sub syn_ping {
+
     $_[0]->{'OPTS'}->{'-P'} = "S$_[1]";
+
+    return $_[0];
 }
 
 sub icmp_ping {
+
     $_[0]->{'OPTS'}->{'-P'} = "I";
+
+    return $_[0];
 }
 
 sub ack_icmp_ping {
+
     $_[0]->{'OPTS'}->{'-P'} = "B$_[1]";
+
+    return $_[0];
 }
 
 =pod
@@ -426,27 +507,45 @@ From slowest to fastest:
 =cut
 
 sub paranoid_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Paranoid';
+
+    return $_[0];
 }
 
 sub sneaky_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Sneaky';
+
+    return $_[0];
 }
 
 sub polite_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Polite';
+
+    return $_[0];
 }
 
 sub normal_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Normal';
+
+    return $_[0];
 }
 
 sub aggressive_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Aggressive';
+
+    return $_[0];
 }
 
 sub insane_timing {
+
     $_[0]->{'OPTS'}->{'-T'} = 'Insane';
+
+    return $_[0];
 }
 
 =pod
@@ -472,7 +571,10 @@ using TCP fingerprinting.
 =cut
 
 sub guess_os {
+
     $_[0]->{'OPTS'}->{'-O'} = "";
+
+    return $_[0];
 }
 
 =pod
@@ -484,7 +586,10 @@ Only scan for services listed in nmap's services file.
 =cut
 
 sub fast_scan {
+
     $_[0]->{'OPTS'}->{'-F'} = "";
+
+    return $_[0];
 }
 
 =pod
@@ -498,7 +603,10 @@ nmap man page for more details.
 =cut
 
 sub ident_check {
+
     $_[0]->{'OPTS'}->{'-I'} = "";
+
+    return $_[0];
 }
 
 =pod
@@ -511,7 +619,10 @@ host before giving up.  Not set by default.
 =cut
 
 sub host_timeout {
+
     $_[0]->{'OPTS'}->{'--host-timeout'} = $_[1];
+
+    return $_[0];
 }
 
 =pod
@@ -524,7 +635,10 @@ wait for a response to a probe of a port.
 =cut
 
 sub max_rtt_timeout {
+
     $_[0]->{'OPTS'}->{'--max_rtt_timeout'} = $_[1];
+
+    return $_[0];
 }
 
 =head2 max_rtt_timeout($milliseconds)
@@ -538,7 +652,10 @@ go below this threshold.
 =cut
 
 sub min_rtt_timeout {
+
     $_[0]->{'OPTS'}->{'--min_rtt_timeout'} = $_[1];
+
+    return $_[0];
 }
 
 =head2 initial_rtt_timeout($milliseconds)
@@ -549,7 +666,10 @@ nmap man page for more detail.
 =cut
 
 sub initial_rtt_timeout {
+
     $_[0]->{'OPTS'}->{'--initial_rtt_timeout'} = $_[1];
+
+    return $_[0];
 }
 
 =pod
@@ -562,7 +682,10 @@ perform in parallel.
 =cut
 
 sub max_parallelism {
+
     $_[0]->{'OPTS'}->{'--max_parallelism'} = $_[1];
+
+    return $_[0];
 }
 
 =pod
@@ -575,16 +698,57 @@ probes.
 =cut
 
 sub scan_delay {
+
     $_[0]->{'OPTS'}->{'--scan_delay'} = $_[1];
+
+    return $_[0];
+}
+
+=pod
+
+=head2 open_nmap() 
+
+This method sets up a scan, but instead of actually performing
+the scan, it returns the PID, read filehandle, write file
+handle, and error file handle of the opened nmap process.  Use
+this if you wish to just use Nmap::Scanner::Scanner as your 
+front end to set up a scan but you wish to process it in some
+way not supported by Nmap::Scanner.
+
+Example:
+
+my $scan = Nmap::Scanner->new();
+
+my $opts = '-sS -P0 -p 1-1024 192.168.32.1-255'; 
+
+my ($pid, $in, $out, $err) = $scan->open_nmap($opts);
+
+=cut
+
+sub open_nmap {
+    
+    my $this = shift;
+
+    my $fast_options = shift || "";
+
+    my $cmd = $this->_setup_cmdline($fast_options);
+
+    die "$cmd\n" if $this->{'NORUN'};
+
+    my $processor = $this->_setup_processor();
+
+    my ($pid, $read, $write, $error)= $processor->start_nmap($cmd);
+    return ($pid, $read, $write, $error);
+
 }
 
 =pod
 
 =head2 scan()
 
-Perform the scan.  If the return value is captured (which might
-not be necessary if doing an event-based scan), returns a
-populated instance of Nmap::Scanner::Backend::Results.
+Perform the scan.  Returns a populated instance of 
+Nmap::Scanner::Backend::Results when scanning in
+batch mode (as opposed to event-driven mode).
 
 =cut
 
@@ -592,6 +756,68 @@ sub scan {
     
     my $this = shift;
 
+    my $fast_options = shift || "";
+
+    #  If we have a file, add "< "
+
+    my $cmd = "";
+
+    $cmd = $this->_setup_cmdline($fast_options);
+
+    die "$cmd\n" if $this->{'NORUN'};
+
+    my $processor = $this->_setup_processor();
+
+    my ($pid, $read)= $processor->start_nmap2($cmd);
+
+    $this->{'RESULTS'} = $processor->process($pid,$read,$cmd);
+
+    return $this->{'RESULTS'};
+
+}
+
+=pod
+
+=head2 scan_from_file()
+
+Recreate a scan from an existing nmap XML-formatted
+output file.  Pass this method in the name of an
+XML file created by a previously performed nmap
+scan done in XML output mode and the file will be
+processed in the same manner as a live scan would
+be processed.
+
+Example:
+
+ my $scanner = Nmap::Scanner->new();
+ my $results = $scanner->scan_from_file('/path/to/scan_output.xml');
+
+=cut
+
+sub scan_from_file {
+    
+    my $this = shift;
+    my $filename = shift || 
+        die "scan_from_file: missing filename to read from!";
+
+    local (*READ);
+
+    open (READ, "< $filename") ||
+        die "scan_from_file: Can't read from $filename: $!";
+
+    my $file = *READ;
+
+    my $processor = $this->_setup_processor();
+
+    $this->{'RESULTS'} = $processor->process($$, $file, $filename);
+
+    return $this->{'RESULTS'};
+
+}
+
+sub _setup_cmdline {
+
+    my $this = shift;
     my $fast_options = shift || "";
 
     my $nmap = $this->{'NMAP'} || _find_nmap();
@@ -604,7 +830,10 @@ sub scan {
 
     local($_);
 
-    my $cmd = "$nmap -v -v -v";
+    #  Single quotes around command to handle spaces in full path
+    #  ... for Windows/Cygwin users.  Fix by Jon Amundsen.
+
+    my $cmd = "'$nmap' -v -v -v";
 
     if (! $fast_options) {
 
@@ -629,7 +858,13 @@ sub scan {
         $cmd .= " $fast_options -oX -";
     }
 
-    die "$cmd\n" if $this->{'NORUN'};
+    return $cmd;
+
+}
+
+sub _setup_processor {
+
+    my $this = shift;
 
     my $processor = Nmap::Scanner::Backend::XML->new();
 
@@ -641,10 +876,7 @@ sub scan {
     $processor->register_port_found_event($this->{'PORT_FOUND_EVENT'});
     $processor->register_no_ports_open_event($this->{'NO_PORTS_OPEN_EVENT'});
 
-    #  And this.
-    $this->{'RESULTS'} = $processor->process($cmd);
-
-    return $this->{'RESULTS'};
+    return $processor;
 
 }
 
@@ -678,10 +910,10 @@ sub _find_nmap {
         closedir(DIR);
         my $path;
         for my $file (@files) {
-            next unless $file eq 'nmap';
-            $path = File::Spec->catfile($dir,$file);
+            next unless $file =~ /^nmap(?:.exe)?$/;
+            $path = File::Spec->catfile($dir, $file);
             #  Should symbolic link be considered?  Helps me on cygwin but ...
-            next unless -r $path && (-x _ || -l _);
+            next unless -r "$path" && (-x _ || -l _);
             return $path;
             last DIR;
         }

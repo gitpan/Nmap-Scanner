@@ -27,21 +27,21 @@ sub state {
 
 =pod
 
-=head2 protocol()
+=head2 proto()
 
 =cut
 
-sub protocol {
+sub proto {
     (defined $_[1]) ? ($_[0]->{PROTO} = $_[1]) : return $_[0]->{PROTO};
 }
 
 =pod
 
-=head2 port_id()
+=head2 portid()
 
 =cut
 
-sub port_id {
+sub portid {
     (defined $_[1]) ? ($_[0]->{PORTID} = $_[1]) : return $_[0]->{PORTID};
 }
 
@@ -49,11 +49,11 @@ sub as_xml {
 
     my $self = shift;
 
-    my $xml  = "  <port-used";
+    my $xml  = "<portused";
        $xml .= ' state="'  . $self->state()  . '" ';
-       $xml .= ' protocol="' . $self->protocol() . '" ';
-       $xml .= ' port-id="' . $self->port_id() . '" ';
-       $xml .= "/>\n";
+       $xml .= ' proto="' . $self->proto() . '" ';
+       $xml .= ' portid="' . $self->portid() . '" ';
+       $xml .= "/>";
 
     return $xml;
 

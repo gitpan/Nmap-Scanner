@@ -42,11 +42,12 @@ sub pinged {
 
 use lib 'lib';
 
-my $p = PingScanner->new($ARGV[0] || 'localhost');
+my $p = PingScanner->new($ARGV[0] || 
+                             die "Missing host to scan!\n$0 host\n");
 $p->callback(
     sub { 
           shift;
-          printf "%s (%s): %s\n", $_[0]->name(), ($_[0]->addresses())[0]->address(),
+          printf "%s (%s): %s\n", $_[0]->hostname(), ($_[0]->addresses())[0]->addr(),
                                   $_[0]->status(); 
     }
 );
