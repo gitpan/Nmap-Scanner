@@ -4,7 +4,7 @@ use lib 'lib';
 
 =head1	NAME
 
- Version: 	$Id: graphscan.pl,v 1.4 2004/03/01 04:02:59 mmanno Exp $
+ Version: 	$Id: graphscan.pl,v 1.5 2004/08/31 13:42:55 mmanno Exp $
  Date:		1.2004
  Author:	mm
 
@@ -54,7 +54,7 @@ my $refresh=7; # of html page with -c
 my $xmldir="xml"; # of xsl stylesheets for -H
 
 # command line options
-getopts('hvupcHf:o:i:x:y:r:R:l:');
+getopts('hvupCHf:o:i:x:y:r:R:l:');
 usage() if $opt_h;
 # FIXME both 'html' ??
 my $imagedir  = $opt_i ? $opt_i : 'html';
@@ -64,7 +64,7 @@ my $bys = $opt_y ? $opt_y : 480; # base size y
 my $file = basename $opt_f if $opt_f;
 die "$!: $imagedir" unless (-d $imagedir);
 die "$!: $resultdir" unless (-d $resultdir);
-if ($opt_H) {
+unless ($opt_H) {
         unless ( -e "$xmldir/bannerscan.xsl" and -e "$xmldir/empty.xsl" and -e "$xmldir/identity.xsl" ) {
                 print "WARN: xsl stylesheets missing in $xmldir\n";
                 print "WARN: no html results page will be build\n";
@@ -89,16 +89,16 @@ my $results;
 # run nmap or load
 if ($opt_r) {
         $file = mk_filename() unless $opt_f;
-        save_html($refresh) if ($opt_H and $opt_c);
+        save_html($refresh) unless ($opt_H and $opt_C);
         #$results = $scanner->scan(" -p 1,21 $opt_r");
         $results = $scanner->scan("-T Aggressive -sS -sV -O --randomize_hosts -p $portrange $opt_r");
 } elsif ($opt_R) {
         $file = mk_filename() unless $opt_f;
-        save_html($refresh) if ($opt_H and $opt_c);
+        save_html($refresh) unless ($opt_H and $opt_C);
         $results = $scanner->scan("-T Aggressive -sS -sV -O -p $portrange -iR $opt_R");
 } elsif ($opt_l) {
         $file = basename $opt_l unless $opt_f;
-        save_html($refresh) if ($opt_H and $opt_c);
+        save_html($refresh) unless ($opt_H and $opt_C);
         $results = $scanner->scan_from_file("$opt_l");
 } else {
         usage();
@@ -115,8 +115,8 @@ save_graph ( "OSMatch", $file, 'hbars', \%stat_os_match ) if %stat_os_match;
 save_graph ( "OSClass", $file, 'hbars', \%stat_os_class ) if %stat_os_class;
 save_graph ( "Products", $file, 'hbars', \%stat_products ) if %stat_products;
 print "\n";
-print "..::HTML::..\n" if $opt_H;
-save_html() if $opt_H;
+print "..::HTML::..\n" unless $opt_H;
+save_html() unless $opt_H;
 
 =head1 Subs
 
@@ -129,19 +129,19 @@ save_html() if $opt_H;
 =cut
 sub usage {
 	print "usage: ". basename($0) ." [-v] [-u] [-p] [-c] [-H] [-x x] [-y y] [-f file] [-o dir] [-i dir] (-r opt|-R n|-l file)\n";
-        print "    -r nmapopt   : run nmap\n";
-        print "    -R number    : run nmap random ip scan on n ips\n";
-        print "    -l file.xml  : load nmap xml\n\n";
-	print "    -v           : verbose\n";
-        print "    -u           : use unknown (product/os), default: drop it\n";
-        print "    -p           : add version to product names\n";
-        print "    -c           : continously generate images (ports/states) during scan\n";
-        print "    -H           : generate HTML page in image dir\n";
-        print "    -x y         : base width       (640)\n";
-        print "    -y x         : base height      (480)\n";
-        print "    -f file.xml  : base filename    (timestamp)\n";
-        print "    -o dir       : xml output dir   (results)\n";
-        print "    -i dir       : image output dir (html)\n";
+    print "    -r nmapopt   : run nmap\n";
+    print "    -R number    : run nmap random ip scan on n ips\n";
+    print "    -l file.xml  : load nmap xml\n\n";
+    print "    -v           : verbose\n";
+    print "    -u           : use unknown (product/os), default: drop it\n";
+    print "    -p           : add version to product names\n";
+    print "    -C           : don\'t continously generate images (ports/states) during scan\n";
+    print "    -H           : don\'t generate HTML page in image dir\n";
+    print "    -x y         : base width       (640)\n";
+    print "    -y x         : base height      (480)\n";
+    print "    -f file.xml  : base filename    (timestamp)\n";
+    print "    -o dir       : xml output dir   (results)\n";
+    print "    -i dir       : image output dir (html)\n";
 	print "    -h           : help\n";
 	print "    i.e.         :  ".basename($0)." -r 10.0.0.0/24\n";
 	print "    i.e.         :  ".basename($0)." -v -c -H -i /home/your/public_html -R 1001\n";
@@ -199,7 +199,7 @@ sub save_graph {
         }
         my @data = ([@k],[@v]);
 
-        print "$title: k=$size, n=$n ;" if $opt_v;
+        #print "$title: k=$size, n=$n ;" if $opt_v;
         $graph->set ( title => $title." (n=".$n.")" );
 
         # generate image
@@ -401,7 +401,7 @@ sub scan_complete {
                 
         } 
         
-        if ($opt_c) {
+        if (not $opt_C) {
                 print "=== Image Update $addresses ===\n" if $opt_v;
                 save_graph ( "Hosts", $file, 'pie', \%stat_hosts ) if %stat_hosts;
                 save_graph ( "Ports", $file, 'pie', \%stat_ports ) if %stat_ports;
@@ -410,8 +410,11 @@ sub scan_complete {
                 save_graph ( "OSMatch", $file, 'hbars', \%stat_os_match ) if %stat_os_match;
                 save_graph ( "OSClass", $file, 'hbars', \%stat_os_class ) if %stat_os_class;
                 save_graph ( "Products", $file, 'hbars', \%stat_products ) if %stat_products;
-                print "\n";
+                #print "\n";
         }
+
+        #print "ip:ports:os\n"
+        
     } #endif host up
 
 

@@ -4,7 +4,7 @@ use lib 'lib';
 
 =head1	NAME
 
- Version: 	$Id: bannerscan.pl,v 1.4 2004/03/01 03:20:00 mmanno Exp $
+ Version: 	$Id: bannerscan.pl,v 1.5 2004/08/31 13:42:55 mmanno Exp $
  Date:		1.2004
  Author:	mm
 
@@ -45,7 +45,7 @@ use Data::Dumper;
 my $portrange="21,22,23,25,53,80,110,119,143,161,389,443,3128,3306,8080";
 
 # command line options
-getopts('hvc:r:R:l:f:o:O:');
+getopts('hvGc:r:R:l:f:o:O:');
 usage() if $opt_h;
 my $probeoutdir = $opt_O ? $opt_O : "out";
 my $resultdir = $opt_o ? $opt_o : "results";
@@ -105,13 +105,14 @@ foreach my $thr (threads->list) {
 =cut
 sub usage {
 	print "usage: ". basename($0) ." [-v] [-h] [-f file] [-c file] [-o dir] [-O dir] (-r opt|-R n|-l file)\n";
-        print "    -r nmapopt   : run nmap\n";
-        print "    -R number    : run nmap random scan number times\n";
-        print "    -l file.xml  : load nmap xml\n\n";
-        print "    -f file.xml  : output filename  (timestamp.xml)\n";
-        print "    -c config.xml: config file      (config.xml)\n";
-        print "    -o dir       : xml output dir   (results)\n";
-        print "    -O dir       : probe output dir (out)\n";
+    print "    -r nmapopt   : run nmap\n";
+    print "    -R number    : run nmap random scan number times\n";
+    print "    -l file.xml  : load nmap xml\n\n";
+    print "    -G           : don\'t start global probe\n"
+    print "    -f file.xml  : output filename  (timestamp.xml)\n";
+    print "    -c config.xml: config file      (config.xml)\n";
+    print "    -o dir       : xml output dir   (results)\n";
+    print "    -O dir       : probe output dir (out)\n";
 	print "    -v           : verbose\n";
 	print "    -h           : help\n";
 	print "    i.e.         :  ".basename($0)." -r 10.0.0.0/24\n";
@@ -184,7 +185,7 @@ dump probe output to file: ip.probetyp.lst
 sub log_run {
     my $cmd=shift;
     my $spool=shift;
-    my $out=`$cmd`;
+    my $out=`$cmd 2>&1`;
     my $name=lc($spool->{addr}.".".$spool->portid().".".$spool->{probetyp});
     open (F,">$probeoutdir/$name.lst") or warn "..::file ERROR::.. $probeoutdir/$name.lst writeable? ";
     print F $out;
@@ -211,7 +212,7 @@ sub check_port {
 
         $spool->{probetyp}=$target->{typ};
         threads->new(\&log_run,$cmd,$spool);
-        #log_run($cmd,$spool);
+        #nonthread#log_run($cmd,$spool);
         
     } else {
         print "..::Unknown::.. $spool->{addr}:".$spool->portid()." \n" if $opt_v;
@@ -288,6 +289,9 @@ sub scan_complete {
             } $host->addresses();
     }
 
+    # Launch global probe
+    #`probes/all.sh $addresses` unless $opt_G;
+
     
 }
 
@@ -306,7 +310,7 @@ sub scan_started {
     my $status = $host->status();
 
     print "$hostname ($addresses) is $status\n" if $opt_v;
-    print Dumper $host if $opt_v;
+    #print Dumper $host if $opt_v;
 }
 
 =head2 no_ports
@@ -325,7 +329,7 @@ sub no_ports {
     my $state = $extraports->state();
 
     print "All ports on host $name ($addresses) are in state $state\n" if $opt_v;
-    print Dumper $host,$extraports if $opt_v;
+    #print Dumper $host,$extraports if $opt_v;
 }
 
 =head2 port_found

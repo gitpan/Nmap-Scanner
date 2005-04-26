@@ -176,6 +176,9 @@ package NmapHandler;
             Nmap::Scanner::debug("Adding port: " . $port->portid());
             $self->{NMAP_HOST}->add_port($port);
             $self->{PORT_COUNT}++;
+            $self->{NMAP_BACKEND}->notify_port_found(
+                $self->{NMAP_HOST}, $self->{NMAP_PORT}
+            );
             undef $self->{NMAP_PORT};
         } elsif ($el->{Name} eq 'ports') {
             unless ($self->{PORT_COUNT} > 0) {
@@ -255,6 +258,7 @@ package NmapHandler;
     }
 
     sub service {
+
         my ($self, $ref) = @_;
         my $port = $self->{NMAP_PORT};
         my $svc = Nmap::Scanner::Service->new();

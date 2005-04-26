@@ -23,21 +23,42 @@ sub new {
 
 =pod
 
-=head2 name()
+=head2 vendor()
 
-Operating system name
+Operating system vendor
 
 =cut
 
 sub vendor {
     (defined $_[1]) ? ($_[0]->{VENDOR} = $_[1]) : return $_[0]->{VENDOR};
 }
+
+=head2 osgen()
+
+Operating system generation
+
+=cut
+
 sub osgen {
     (defined $_[1]) ? ($_[0]->{OSGEN} = $_[1]) : return $_[0]->{OSGEN};
 }
+
+=head2 type()
+
+Operating system generation
+
+=cut
+
 sub type {
     (defined $_[1]) ? ($_[0]->{TYPE} = $_[1]) : return $_[0]->{TYPE};
 }
+
+=head2 osfamily()
+
+Operating system family
+
+=cut
+
 sub osfamily {
     (defined $_[1]) ? ($_[0]->{OSFAMILY} = $_[1]) : return $_[0]->{OSFAMILY};
 }

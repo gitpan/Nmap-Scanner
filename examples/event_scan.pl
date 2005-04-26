@@ -18,7 +18,7 @@ $scanner->register_scan_complete_event(\&scan_complete);
 $scanner->register_scan_started_event(\&scan_started);
 $scanner->register_port_found_event(\&port_found);
 $scanner->register_no_ports_open_event(\&no_ports);
-$scanner->scan("-sT -PT -O --max_rtt_timeout 300 -p $ports $hosts");
+$scanner->scan("-sT -P0 -O --max_rtt_timeout 300 -p $ports $hosts");
 
 sub no_ports {
     my $self       = shift;
@@ -33,31 +33,48 @@ sub no_ports {
 }
 
 sub scan_complete {
+
     my $self      = shift;
     my $host      = shift;
 
     print "Finished scanning ", $host->hostname(),":\n";
-    my $guess = $host->os();
-    my @matches = $host->os()->osmatches();
 
-    if ($guess && @matches) {
+    my $guess = $host->os();
+
+    if ($guess) {
+
+        my @matches = $host->os()->osmatches();
         my $uptime = $guess->uptime;
-        print "  * Host has been up since " . $uptime->lastboot(),"\n"
-            if $uptime;
+
+        print "  * Host has been up since " . $uptime->lastboot() . "\n"
+            if $uptime->lastboot() ne '';
+
         my $t = $guess->tcpsequence();
+
         print "  * TCP Sequence difficulty: " . $t->difficulty(),"\n"
-            if $t;
-        print "  * OS guesses:\n";
-        for my $match (@matches) {
-            print "    o " . $match->name() . " / (". $match->accuracy() . "% sure)\n";
+            if $t->difficulty();
+
+        if (scalar(@matches) > 0) {
+
+            print "  * OS guesses:\n";
+
+            for my $match (@matches) {
+                print "    o " . $match->name() . " / (". 
+                                 $match->accuracy() . "% sure)\n";
+            }
+
         }
+
     } else {
+
         print "Can't figure out what OS ",$host->hostname()," has.\n";
+
     }
 
 }
 
 sub scan_started {
+
     my $self     = shift;
     my $host     = shift;
 
@@ -66,9 +83,11 @@ sub scan_started {
     my $status = $host->status();
 
     print "$hostname ($addresses) is $status\n";
+
 }
 
 sub port_found {
+
     my $self     = shift;
     my $host     = shift;
     my $port     = shift;
@@ -78,6 +97,6 @@ sub port_found {
 
     print "On host $name ($addresses), found ",
           $port->state()," port ",
-          join('/',$port->protocol(),$port->portid()),"\n";
+          join('/',$port->protocol(), $port->portid()),"\n";
 
 }

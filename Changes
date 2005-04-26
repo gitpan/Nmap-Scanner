@@ -1,5 +1,13 @@
 Revision history:
 
+0.8 - Added port_found call to port() routine as <addport>
+      was removed from nmap version 3.75
+0.7a
+   - Updated README file with correct information
+   - Updated tests so tests that require nmap binary get
+     skipped (instead of failing) if nmap binary not found
+   - Updated version in lib/Nmap/Scanner.pm to .7
+
 0.7
 
    Will Saxon (WillS --at-- housing dot ufl DOT edu)
