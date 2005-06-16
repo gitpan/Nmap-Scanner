@@ -2,7 +2,7 @@ package Nmap::Scanner;
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.7';
+$VERSION = '0.8';
 
 #  Set this to 1 and debugging is on for all modules
 $Nmap::Scanner::DEBUG = 0;
