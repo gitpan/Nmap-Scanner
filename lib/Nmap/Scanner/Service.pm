@@ -24,6 +24,7 @@ sub new {
         SERVICE    => '', 
         VERSION    => '', 
         EXTRAINFO  => '', 
+        TUNNEL     => '', 
         CONF       => ''};
     return bless $me, $class;
 }
@@ -96,6 +97,16 @@ sub method {
 
 sub conf {
     (defined $_[1]) ? ($_[0]->{CONF} = $_[1]) : return $_[0]->{CONF};
+}
+
+=pod
+
+=head2 tunnel()
+
+=cut
+
+sub tunnel {
+    (defined $_[1]) ? ($_[0]->{TUNNEL} = $_[1]) : return $_[0]->{TUNNEL};
 }
 
 =pod

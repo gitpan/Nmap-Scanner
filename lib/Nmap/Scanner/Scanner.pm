@@ -766,6 +766,8 @@ sub scan {
 
     die "$cmd\n" if $this->{'NORUN'};
 
+    Nmap::Scanner::debug("command line: $cmd");
+
     my $processor = $this->_setup_processor();
 
     my ($pid, $read)= $processor->start_nmap2($cmd);

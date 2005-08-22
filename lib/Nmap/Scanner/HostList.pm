@@ -25,6 +25,12 @@ sub new {
     return bless $me, $class;
 }
 
+=pod
+
+=head2 get_next()
+
+=cut
+
 sub get_next {
     return $_[0]->{LISTREF}->{ shift @{$_[0]->{KEYS}} }
         if @{$_[0]->{KEYS}};

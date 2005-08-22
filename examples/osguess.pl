@@ -4,7 +4,6 @@ use lib 'lib';
 
 package OsGuesser;
 
-
 use Nmap::Scanner::Scanner;
 
 use strict;
@@ -12,15 +11,19 @@ use vars qw(@ISA);
 
 @ISA = qw(Nmap::Scanner::Scanner);
 
+$Nmap::Scanner::DEBUG = 0;
+
 sub new {
 
     my $class = shift;
     my $self = $class->SUPER::new();
 
+    my $target = $_[0] || die "Need target (host spec/file)!";
+    $self->{'OS_SCAN_TARGET'} = $target;
+
     $self->tcp_syn_scan();
-    $self->add_scan_port('21,22,23,25,80');
+    $self->add_scan_port('1-5000');
     $self->guess_os();
-    $self->add_target($_[0] || die "Need target in constructor!\n");
     $self->register_scan_complete_event(\&complete);
 
     return bless $self, $class;
@@ -28,8 +31,22 @@ sub new {
 }
 
 sub scan {
+
     die "Need callback!\n" unless $_[0]->{'CALLBACK'};
-    $_[0]->SUPER::scan();
+
+    my $target = $_[0]->{'OS_SCAN_TARGET'};
+
+    if ( -r $target ) {
+
+        $_[0]->SUPER::scan_from_file($target);
+
+    } else {
+
+        $_[0]->add_target($target);
+        $_[0]->SUPER::scan();
+
+    }
+
 }
 
 sub callback {
@@ -49,7 +66,7 @@ use strict;
 use Nmap::Scanner;
 
 my $os = OsGuesser->new($ARGV[0] || 
-                            die "Missing host to scan!\n$0 host\n");
+         die "Missing host to scan or file to scan from!\n$0 host\n");
 $os->callback(\&guessed);
 $os->scan();
 
@@ -61,10 +78,39 @@ sub guessed {
     my $ip   = ($host->addresses())[0]->addr();
     my $os   = $host->os();
 
-    print "$name ($ip) looks like ",
-        join('/',
-            map { $_->name() . " (" . $_->accuracy() . "%)" } $os->osmatches()
-        ),"\n";
+    unless ($os) {
+        print "Could not guess anything about the OS of $name ($ip)\n";
+        return;
+    }
+
+    if (scalar($os->osclasses()) > 0) {
+
+        print "OS classes: $name ($ip) could be:\n";
+
+        for my $osc ($os->osclasses()) {
+            print ' * ',
+                  join(' ', $osc->vendor(), ($osc->osgen() || "\b")) .
+                  " (" .  $osc->accuracy() . "%)",
+                  "\n";
+        }
+
+    }
+
+    if (scalar($os->osmatches()) > 0) {
+
+        print "OS matches: $name ($ip) could be:\n";
+
+        for my $m ($os->osmatches()) {
+            print ' * ', $m->name(), " (" .  $m->accuracy() . "%)",
+                  "\n";
+        }
+
+    } else {
+
+        print "OS matches: $name ($ip):\n";
+        print " * No matches found\n";
+
+    }
 
     my $u = $os->uptime();
 

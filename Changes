@@ -1,5 +1,21 @@
 Revision history:
 
+0.9 
+    - Added Nmap::Scanner::RunStats::Finished class
+    - Added vendor to Nmap::Scanner::Address class
+    - Added startstr to Nmap::Scanner::NmapRun class
+    - Added tunnel to Nmap::Scanner::Service class
+    - Documentation updates / edits
+
+    David Blank-Edelman (dnb ~at~ pobox -.- com)
+    - XML.pm will now use any XML::SAX parser available on a host,
+      not just XML::SAX::PurePerl.
+    - Documentation correction for Nmap::Scanner, where I incorrectly
+      stated that a port is identified by nmap only when that port
+      is found to be open.  If the port is explicitly passed to -P,
+      nmap will report it's state regardless of whether it is
+      open or not.
+
 0.8 - Added port_found call to port() routine as <addport>
       was removed from nmap version 3.75
 0.7a

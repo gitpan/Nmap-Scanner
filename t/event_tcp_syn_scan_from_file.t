@@ -4,13 +4,14 @@ use lib 'lib';
 use Test;
 use strict;
 use Nmap::Scanner;
-use constant FILE => 't/victor.xml';
+use constant FILE1 => 't/victor.xml';
+use constant FILE2 => 't/router.xml';
 
-BEGIN { plan tests => 3 }
+BEGIN { plan tests => 6 }
 
 my $scanner = Nmap::Scanner->new();
 $scanner->debug(1);
-my $scan = $scanner->scan_from_file(FILE);
+my $scan = $scanner->scan_from_file(FILE1);
 
 ok($scan);
 
@@ -18,6 +19,16 @@ my $host = $scan->get_host_list()->get_next();
 ok(sub { ($host->addresses())[0]->addr() ne "" });
 
 my $aport = $host->get_port_list()->get_next();
+ok($aport->portid());
+
+$scan = $scanner->scan_from_file(FILE2);
+
+ok($scan);
+
+$host = $scan->get_host_list()->get_next();
+ok(sub { ($host->addresses())[0]->addr() ne "" });
+
+$aport = $host->get_port_list()->get_next();
 ok($aport->portid());
 
 1;

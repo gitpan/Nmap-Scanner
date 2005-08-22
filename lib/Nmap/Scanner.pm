@@ -2,7 +2,7 @@ package Nmap::Scanner;
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.8';
+$VERSION = '0.9';
 
 #  Set this to 1 and debugging is on for all modules
 $Nmap::Scanner::DEBUG = 0;
@@ -108,9 +108,7 @@ into new and existing perl scripts.
 
 If you don't have nmap installed, you will need to download it BEFORE you
 can use these modules.  Get it from http://www.insecure.org/nmap/.  You will
-need nmap 3.10+ installed to use all the features of this module as I had
-to submit some small patches to the nmap project so that it would emit 
-port found information in XML.
+need nmap 3.10+ installed to use all the features of this module.
 
 =head1 USAGE
 
@@ -154,49 +152,28 @@ the scan process for EACH host specified with add_target().  The
 host closed event is called if a specified host is found to be unavailable
 via whatever type of ping has been specified.  The no ports open event
 is triggered if no ports are found to be open on a scanned host.  The
-port found event is called when a port IS found to be open on a host.
-The scan complete event is called as soon as the scan of a host specified as a
+port found event is called when nmap identifies a port as open on a host
+(if the port is not explicitly passed to -P) or when the state of a port
+passed to -P is determined, whether the port is open or not.  The scan 
+complete event is called as soon as the scan of a host specified as a
 target with add_target() is complete.
 
 =head1 NOTES
 
-Nmap::Scanner parses the output from nmap; after some discussion with Fyodor
-it seems this is the most portable and flexible way to use nmap from within
-a programming language.  
-
-The current set of modules parses the output from "-oX" (`XML' output); for
-now this is the only output this module set will handle as it is both
-consistent and likely not to change much (according to Fyodor).
+Please keep in mind that this is not a complete implementation of nmap in perl; this module is most likely best suited for larger OO projects implemented in
+perl, although it certainly can be used for relatively quick and dirty scripts
+as well.
 
 =head1 THANKS
 
 Special thanks to Fyodor (fyodor@insecure.org) for creating such a useful
 tool and to all the developers and contributors who constantly work to 
-improve and fine-tune nmap for grateful users like me!
+improve and fine-tune nmap!
 
-Thanks also to those of you who put up with the first two versions of this
-module set; they were very unstable and I appreciate the feedback I have
-received regarding them.  Hopefully you will find this release to be much
-more stable and usable than the previous two.
-
-=head1 FINAL NOTES
-
-Please keep in mind that this is not a complete implementation of nmap in perl!
-
-Also, all long options (e.g. $scanner->tcp_syn_scan()) will go away next 
-release.  The $scanner->scan('options options') method is much easier for 
-nmap users (I think) and doing the long options adds a lot of work and 
-maintenance for what I perceive is very little benefit.  If you disagree
-please let me know!
+Thanks also to those of you have provided feedback, bug fixes, and enhancement
+code, it is very much appreciated!
 
 =head1 NEXT RELEASE
-
-Possibly do some error handling, though I don't know if this really will
-be useful.
-
-Remove long options in favor of using scan($options_string).
-
-Convert my own XML output (as_xml) to be compliant with the nmap DTDs.
 
 More examples.
 
@@ -204,7 +181,7 @@ More complete documentation.
 
 =head1 AUTHOR
 
-Max Schubert, <nmap -at- webwizarddesign.com>
+Max Schubert, <maxschube@cpan.org>
 
 =head1 LICENSE
 
@@ -214,7 +191,7 @@ This software is released under the same license and terms as perl itself.
 
 http://www.insecure.org/nmap/
 
-http://www.webwizarddesign.com/nmap/
+http://nmap-scanner.sf.net/
 
 Nmap::Scanner::Scanner
 

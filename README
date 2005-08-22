@@ -5,8 +5,14 @@ make
 make test
 make install
 
-NOTE:  This module now relies on XML::SAX and XML::SAX::PurePerl for parsing
-       the XML output of nmap.
+NOTE:  This module relies on XML::SAX for parsing the XML output of
+       nmap; it will use any XML::SAX conformant parser installed on
+       a system as it uses XML::SAX::ParserFactory.  Please see the 
+       documentation for XML::SAX for the rules on what parser the parser 
+       factory will choose to use.  XML::SAX always comes with at least
+       one implementation of an XML::SAX compliant parser, XML::SAX::PurePerl.
+       For better speed, install a C-glue code SAX:XML module like 
+       XML::LibXML::SAX.
 
 DOCUMENTATION
 
@@ -30,17 +36,10 @@ Nmap::Scanner perlifies the output of the network mapping tool nmap
 mode or firing events when significant scanning events occur in event scan mode.
 
 If you do not have nmap installed on your system, you will need to install it 
-before you can use this module.  Please make sure to use a version that is
-at or newer than 3.10ALPHA4, as I contributed a few small patches to output
-the port found messages nmap outputs as it is running in XML format.
-
-Older versions (as far back as 2.54BETA32) should work with this module, but 
-the port found events will not not be seen; for those to work correctly, 
-please use a version of nmap NEWER than 3.21.
-
-This version, only parses the XML output from nmap (-oX -) as that is the most 
-stable output format from nmap and will change very little compared to the 
-other output formats (according to Fyodor, the author of nmap).
+before you can use this module (or only use scan_from_file(), which reads 
+nmap-generated XML files).  Please make sure to use a version of nmap that is
+newer than 3.50 if possible, as the XML DTD for nmap changed several times
+prior to 3.50.  Using a version prior to 3.50 may work but no guarantees.
 
 PROJECT INFORMATION
 ===================
@@ -64,7 +63,7 @@ http://sourceforge.net/forum/forum.php?forum_id=351428
 Please feel free to email me with nmap-scanner related questions, comments, and
 criticisms (mailing list postings preferred).  All feedback is welcomed.
 
-We hope you find this project useful,
+I hope you find this project useful,
 Max
 
 maxschube@cpan.org

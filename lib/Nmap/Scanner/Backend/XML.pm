@@ -5,8 +5,7 @@ use strict;
 use vars qw(@ISA);
 @ISA = qw(Nmap::Scanner::Backend::Processor);
 
-use XML::SAX;
-use XML::SAX::PurePerl;
+use XML::SAX::ParserFactory; 
 
 use Nmap::Scanner;
 use Nmap::Scanner::Backend::Results;
@@ -28,7 +27,7 @@ sub process {
     my $cmdline = shift;
 
     my $handler = NmapHandler->new($self);
-    my $parser = XML::SAX::PurePerl->new(Handler => $handler);
+    my $parser = XML::SAX::ParserFactory->parser(Handler => $handler);
 
     eval { $parser->parse_file($in) };
 
@@ -77,6 +76,7 @@ package NmapHandler;
     use Nmap::Scanner::Hosts;
     use Nmap::Scanner::ExtraPorts;
     use Nmap::Scanner::RunStats;
+    use Nmap::Scanner::RunStats::Finished;
     use Nmap::Scanner::NmapRun;
     use Nmap::Scanner::ScanInfo;
     use Nmap::Scanner::Backend::Results;
@@ -235,6 +235,8 @@ package NmapHandler;
         my $addr = Nmap::Scanner::Address->new();
         $addr->addr($ref->{'{}addr'}->{Value});
         $addr->addrtype($ref->{'{}addrtype'}->{Value});
+        $addr->vendor($ref->{'{}vendor'}->{Value}) 
+            if $ref->{'{}vendor'}->{Value};
         $self->{NMAP_HOST}->add_address($addr);
     }
 
@@ -269,6 +271,7 @@ package NmapHandler;
         $svc->highver($ref->{'{}highver'}->{Value});
         $svc->method($ref->{'{}method'}->{Value});
         $svc->conf($ref->{'{}conf'}->{Value});
+        $svc->tunnel($ref->{'{}tunnel'}->{Value});
         $svc->product($ref->{'{}product'}->{Value});
         $svc->version($ref->{'{}version'}->{Value});
         $svc->extrainfo($ref->{'{}extrainfo'}->{Value});
@@ -377,6 +380,7 @@ package NmapHandler;
         $run->scanner($ref->{'{}scanner'}->{Value});
         $run->args($ref->{'{}args'}->{Value});
         $run->start($ref->{'{}start'}->{Value});
+        $run->startstr($ref->{'{}startstr'}->{Value});
         $run->version($ref->{'{}version'}->{Value});
         $run->xmloutputversion($ref->{'{}xmloutputversion'}->{Value});
         $self->{NMAP_NMAPRUN} = $run;
@@ -419,7 +423,10 @@ package NmapHandler;
 
     sub finished {
         my ($self, $ref) = @_;
-        $self->{NMAP_RUNSTATS}->finished($ref->{'{}time'}->{Value});
+        my $f = Nmap::Scanner::RunStats::Finished->new();
+        $f->time($ref->{'{}time'}->{Value});
+        $f->timestr($ref->{'{}timestr'}->{Value});
+        $self->{NMAP_RUNSTATS}->finished($f);
     }
 
     sub results {

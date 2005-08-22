@@ -16,7 +16,11 @@ use strict;
 
 sub new {
     my $class = shift;
-    my $me = { VENDOR => undef, OSGEN=> undef, TYPE => undef, OSFAMILY => undef, ACCURACY => undef };
+    my $me = { VENDOR => undef, 
+                OSGEN => undef, 
+                 TYPE => undef, 
+             OSFAMILY => undef, 
+             ACCURACY => undef };
     return bless $me, $class;
 }
 

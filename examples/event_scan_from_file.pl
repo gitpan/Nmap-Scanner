@@ -3,7 +3,7 @@
 use strict;
 use lib 'lib';
 use Nmap::Scanner;
-use constant FILE => 't/victor.xml';
+use constant FILE => 't/router.xml';
 
 my $scanner = new Nmap::Scanner;
 

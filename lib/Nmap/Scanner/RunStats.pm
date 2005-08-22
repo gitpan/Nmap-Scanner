@@ -20,7 +20,7 @@ sub new {
 
 =pod
 
-=head2 finished()
+=head2 finished() - Nmap::Scanner::RunStats::Finished
 
 =cut
 
@@ -43,7 +43,7 @@ sub as_xml {
     my $self = shift;
 
     my $xml = "<runstats>";
-    $xml .= '<finished time="' . $self->finished() . "\" />\n";
+    $xml .= $self->finished()->as_xml() if $self->finished();
     $xml .= $self->hosts()->as_xml() if $self->hosts();
     $xml .= "</runstats>\n";
 

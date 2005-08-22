@@ -22,6 +22,7 @@ sub new {
                SCANNER          => '',
                ARGS             => '',
                START            => '',
+               STARTSTR         => '',
                VERSION          => '',
                XMLOUTPUTVERSION => 0,
                VERBOSE          => 0,
@@ -86,6 +87,18 @@ sub start {
 
 =pod
 
+=head2 startstr()
+
+Starting time for scan, ctime format
+
+=cut
+
+sub startstr {
+    (defined $_[1]) ? ($_[0]->{STARTSTR} = $_[1]) : return $_[0]->{STARTSTR};
+}
+
+=pod
+
 =head2 version()
 
 Version of scanner used.
@@ -138,6 +151,7 @@ sub as_xml {
     $xml .= ' scanner="' . $self->scanner() .  '"';
     $xml .= ' args="' . $self->args() . '"';
     $xml .= ' start="' . $self->start() . '"';
+    $xml .= ' startstr="' . $self->startstr() . '"';
     $xml .= ' version="' . $self->version() . '"';
     $xml .= ' xmloutputversion="' . $self->xmloutputversion() . '"';
     $xml .= ">\n";

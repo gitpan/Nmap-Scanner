@@ -13,7 +13,7 @@ nmap.
 
 sub new {
     my $class = shift;
-    my $me = {ADDR => '', ADDRTYPE => ''};
+    my $me = {ADDR => '', ADDRTYPE => '', VENDOR => ''};
     return bless $me, $class;
 }
 
@@ -37,13 +37,24 @@ sub addrtype {
     (defined $_[1]) ? ($_[0]->{ADDRTYPE} = $_[1]) : return $_[0]->{ADDRTYPE};
 }
 
+=pod
+
+=head2 vendor()
+
+=cut
+
+sub vendor {
+    (defined $_[1]) ? ($_[0]->{VENDOR} = $_[1]) : return $_[0]->{VENDOR};
+}
+
 sub as_xml {
 
     my $self = shift;
 
     return
         '<address addr="' . $self->addr() .
-        '" addrtype="' . $self->addrtype() . '" />';
+        '" addrtype="' . $self->addrtype() .
+        '" vendor="' . $self->vendor() . '" />';
 
 }
 

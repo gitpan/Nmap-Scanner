@@ -15,7 +15,7 @@ my $scanner = new Nmap::Scanner;
 $scanner->add_target($targets);
 
 $scanner->tcp_syn_scan();
-#$scanner->debug(1);
+$scanner->debug(1);
 $scanner->add_scan_port($ports);
 $scanner->ack_icmp_ping();
 $scanner->guess_os();
@@ -33,8 +33,18 @@ sub scan_complete {
     print "Finished scanning ", $host->hostname(),"\n";
 
     for my $match ($host->os()->osmatches()) {
-        print "Host is of type: " . $match->name(),"\n";
+        print "Host could be of type: " . $match->name(),"\n";
         printf "Nmap is %d%% sure of this\n", $match->accuracy();
+    }
+
+    print "Operating system classes as determined by nmap:\n";
+
+    for my $c ($host->os()->osclasses()) {
+        print "* " . $c->vendor() . "\n";
+        print "- OS generation: " . $c->osgen() . "\n";
+        print "- OS family:     " . $c->osfamily() . "\n";
+        print "- OS Type:       " . $c->type() . "\n";
+        print "- Accuracy:      " . $c->accuracy() . "\n";
     }
 
     print "Host has been up since " . $host->os->uptime()->lastboot()."\n"
