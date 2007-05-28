@@ -4,6 +4,7 @@ use strict;
 
 use lib 'lib';
 use Nmap::Scanner;
+$|++;
 
 my $HELP = "$0 target_spec port_spec";
 
@@ -44,11 +45,11 @@ sub scan_complete {
         print "- OS generation: " . $c->osgen() . "\n";
         print "- OS family:     " . $c->osfamily() . "\n";
         print "- OS Type:       " . $c->type() . "\n";
-        print "- Accuracy:      " . $c->accuracy() . "\n";
+        print "- Accuracy:      " . $c->accuracy() . "%\n";
     }
 
     print "Host has been up since " . $host->os->uptime()->lastboot()."\n"
-            if defined $host->os()->uptime->lastboot();
+            if defined $host->os()->uptime();
 
 }
 
@@ -57,7 +58,7 @@ sub scan_started {
     my $host = shift;
 
     my $hostname = $host->hostname();
-    my $ip       = ($host->addresses)[0]->addr();
+    my $ip       = $host->addresses(0)->addr();
     my $status   = $host->status;
 
     print "$hostname ($ip) is $status\n";

@@ -3,6 +3,7 @@
 use lib 'lib';
 
 use Nmap::Scanner;
+$|++;
 
 use strict;
 

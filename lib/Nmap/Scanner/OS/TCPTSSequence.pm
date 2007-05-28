@@ -1,4 +1,17 @@
-package Nmap::Scanner::OS::TCPTSSequence;
+
+use strict;
+
+use Class::Generate qw(class);
+
+class 'Nmap::Scanner::OS::TCPTSSequence' => {
+    qw(class  $
+       values $),
+    '&as_xml' => q!qq(<tcptssequence class="$self->{class}" ) .
+                   ($self->{'values'} ? qq(values="$self->{values}") : '') .
+                   '/>';!
+};
+
+1;
 
 =pod
 
@@ -6,48 +19,8 @@ package Nmap::Scanner::OS::TCPTSSequence;
 
 TCPTSSequence - TCP time stamp sequence of remote host
 
-=cut
-
-use strict;
-
-sub new {
-    my $class = shift;
-    my $me = { CLASS => undef, VALUES => undef };
-    return bless $me, $class;
-}
-
-=pod
-
 =head2 class()
-
-=cut
-
-sub class {
-    (defined $_[1]) ? ($_[0]->{CLASS} = $_[1]) : return $_[0]->{CLASS};
-}
-
-=pod
 
 =head2 values()
 
 =cut
-
-sub values {
-    (defined $_[1]) ? ($_[0]->{VALUES} = $_[1]) : return $_[0]->{VALUES};
-}
-
-sub as_xml {
-
-    my $self = shift;
-
-    my $xml  = "<tcptssequence";
-       $xml .= ' class="'  . $self->class()  . '" ';
-       $xml .= ' values="' . $self->values() . '" ' if $self->values();
-       $xml .= "/>";
-
-    return $xml;
-
-}
-
-1;
-__END__;

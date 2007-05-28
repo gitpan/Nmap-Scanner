@@ -1,4 +1,23 @@
-package Nmap::Scanner::RunStats;
+
+use strict;
+use Class::Generate qw(class);
+
+class 'Nmap::Scanner::RunStats' => {
+    qw(finished Nmap::Scanner::RunStats::Finished
+       hosts    Nmap::Scanner::Hosts),
+    '&as_xml' => q!
+
+    my $xml = "<runstats>";
+    $xml .= $self->{'finished'}->as_xml() if $self->{'finished'};
+    $xml .= $self->{'hosts'}->as_xml() if $self->{'hosts'};
+    $xml .= "</runstats>\n";
+
+    return $xml;
+
+    !
+};
+
+1;
 
 =pod
 
@@ -8,48 +27,8 @@ This class represents Nmap Summary/scan information.
 
 =head1 PROPERTIES
 
-=cut
-
-use strict;
-
-sub new {
-    my $class = shift;
-    my $me = { FINISHED => '', HOSTS => '' };
-    return bless $me, $class;
-}
-
-=pod
-
 =head2 finished() - Nmap::Scanner::RunStats::Finished
-
-=cut
-
-sub finished {
-    (defined $_[1]) ? ($_[0]->{FINISHED} = $_[1]) : return $_[0]->{FINISHED};
-}
-
-=pod
 
 =head2 hosts()
 
 =cut
-
-sub hosts {
-    (defined $_[1]) ? ($_[0]->{HOSTS} = $_[1]) : return $_[0]->{HOSTS};
-}
-
-sub as_xml {
-
-    my $self = shift;
-
-    my $xml = "<runstats>";
-    $xml .= $self->finished()->as_xml() if $self->finished();
-    $xml .= $self->hosts()->as_xml() if $self->hosts();
-    $xml .= "</runstats>\n";
-
-    return $xml;
-
-}
-
-1;
-__END__;

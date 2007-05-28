@@ -1,5 +1,34 @@
 Revision history:
 
+1.0
+
+   - XML scan now uses open3, helps produce more informative error
+     output when nmap produces an error message.
+   - Added Nmap::Scanner::Task class to model taskbegin and taskend
+     XML elements.
+   - Added Nmap::Scanner::TaskProgress class to model taskbegin and taskend
+     XML elements.
+   - Added Nmap::Scanner::Distance class for host->distance.
+   - Added register_task_started and register_task_ended event
+     handlers to allow calling programs to be immediately notified
+     when taskbegin and taskend elements appear in the XML output.
+   - Added register_task_progress handler to allow calling programs 
+     to be immediately notified when taskprogress elements appear
+     in XML (good for GUIs).
+
+0.95
+
+    - scan_from_file() can now use LWP to retrieve files using
+      HTTP GET, i.e. http://nmap-scanner.sf.net/scan-test.xml
+    - Changed model classes to use Class::Generate to make
+      development and changing of model classes easier
+    - RPC scan option was broken, fixed now.
+    - Documentation clean up
+    - Examples updated and cleaned up
+    - run-examples.sh driver added to run all examples from one
+      spot (makes regression testing of the module easier)
+    - Noted in documentation that ident scan is now deprecated
+
 0.9 
     - Added Nmap::Scanner::RunStats::Finished class
     - Added vendor to Nmap::Scanner::Address class

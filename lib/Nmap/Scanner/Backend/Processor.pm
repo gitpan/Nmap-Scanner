@@ -10,6 +10,7 @@ This is the base class for output processors for Nmap::Scanner.
 
 use strict;
 use IPC::Open3;
+use FileHandle;
 
 sub new {
     my $class = shift;
@@ -116,6 +117,57 @@ sub register_no_ports_open_event {
     $_[0]->{'NO_PORTS_OPEN_EVENT'} = $_[1];
 }
 
+=head1 register_task_started_event()
+
+Use this to tell the backend processor you want
+to be notified when an nmap task has started.
+
+Pass in a reference to a function that will
+receive two arguments when called:  A reference
+to the calling object and a reference to an
+Nmap::Scanner::Task instance.  Note that since
+this is the begin part of a task end_time() will
+be undefined.
+
+=cut
+
+sub register_task_started_event {
+    $_[0]->{'TASK_STARTED_EVENT'} = $_[1];
+}
+
+=head1 register_task_ended_event()
+
+Use this to tell the backend processor you want
+to be notified when an nmap task has ended.
+
+Pass in a reference to a function that will
+receive two arguments when called:  A reference
+to the calling object and a reference to an
+Nmap::Scanner::Task instance. 
+
+=cut
+
+sub register_task_ended_event {
+    $_[0]->{'TASK_ENDED_EVENT'} = $_[1];
+}
+
+=head1 register_task_progress_event()
+
+Use this to tell the backend processor you want
+to be notified when an nmap task progress event occurs.
+
+Pass in a reference to a function that will
+receive two arguments when called:  A reference
+to the calling object and a reference to an
+Nmap::Scanner::TaskProgress instance. 
+
+=cut
+
+sub register_task_progress_event {
+    $_[0]->{'TASK_PROGRESS_EVENT'} = $_[1];
+}
+
+
 =pod
 
 =head1 results()
@@ -164,28 +216,25 @@ sub start_nmap {
     my $self = shift;
     my $cmdline = shift;
 
-    local(*READ, *WRITE, *ERROR);
+    my ($readfh, $writefh, $errorfh) = 
+        (FileHandle->new(), FileHandle->new(), FileHandle->new());
 
     my $pid = 0;
 
-    my $read = *READ;
-
     if (-f $cmdline) {
-        open(READ, "+< $cmdline") ||
+        open($readfh, "+< $cmdline") ||
             die "Can't read from input file $cmdline: $!\n";
-        *WRITE = *READ;
+        $writefh = $readfh;
         my $error = "";
-        open(ERROR, '<', \$error);
+        open($errorfh, '<', \$error);
     } else {
-        $pid = open3(\*WRITE, \*READ, \*ERROR, $cmdline) ||
+        $pid = open3($writefh, $readfh, $errorfh, $cmdline) ||
                      die "Can't open pipe to $cmdline: $!\n";
-        $read->flush();
+        $readfh->flush();
+        $errorfh->flush();
     }
 
-    my $write = *WRITE;
-    my $error = *ERROR;
-    
-    return ($pid, $read, $write, $error);
+    return ($pid, $readfh, $writefh, $errorfh);
     
 }
 
@@ -307,4 +356,57 @@ sub notify_no_ports_open {
     ) if (defined $_[0]->{'NO_PORTS_OPEN_EVENT'}->[0]);
 }
 
+=head1 notify_task_started()
+
+Notify the listener that an nmap task begin (taskbegin)
+event has occurred.  Caller is passed a
+reference to the callers self reference
+(object instance) and an Nmap::Scanner::Task
+instance.
+
+=cut
+
+sub notify_task_started {
+
+    &{$_[0]->{'TASK_STARTED_EVENT'}->[1]}(
+        $_[0]->{'TASK_STARTED_EVENT'}->[0], $_[1]
+    ) if defined $_[0]->{'TASK_STARTED_EVENT'}->[1];
+
+}
+
+=head1 notify_task_ended()
+
+Notify the listener that an nmap task end (taskend)
+event has occurred.  Caller is passed a
+reference to the callers self reference
+(object instance) and an Nmap::Scanner::Task
+instance.
+
+=cut
+
+sub notify_task_ended {
+
+    &{$_[0]->{'TASK_ENDED_EVENT'}->[1]}(
+        $_[0]->{'TASK_ENDED_EVENT'}->[0], $_[1]
+    ) if defined $_[0]->{'TASK_ENDED_EVENT'}->[1];
+
+}
+
+=head1 notify_task_progress()
+
+Notify the listener that an nmap task end (taskend)
+event has occurred.  Caller is passed a
+reference to the callers self reference
+(object instance) and an Nmap::Scanner::TaskProgress
+instance.
+
+=cut
+
+sub notify_task_progress {
+
+    &{$_[0]->{'TASK_PROGRESS_EVENT'}->[1]}(
+        $_[0]->{'TASK_PROGRESS_EVENT'}->[0], $_[1]
+    ) if defined $_[0]->{'TASK_PROGRESS_EVENT'}->[1];
+
+}
 1;

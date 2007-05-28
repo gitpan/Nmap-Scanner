@@ -2,17 +2,19 @@
 
 use strict;
 use lib 'lib';
+use FindBin qw($Bin);
 use Nmap::Scanner;
-use constant FILE => 't/router.xml';
+use constant FILE => "$Bin/../t/router.xml";
 
-my $scanner = new Nmap::Scanner;
+my $scanner = Nmap::Scanner->new();
+$|++;
 
 $scanner->debug(1);
 $scanner->register_scan_complete_event(\&scan_complete);
 $scanner->register_scan_started_event(\&scan_started);
 $scanner->register_port_found_event(\&port_found);
 $scanner->register_no_ports_open_event(\&no_ports);
-$scanner->scan_from_file(FILE);
+$scanner->scan_from_file($ARGV[0] || FILE);
 
 sub no_ports {
     my $self       = shift;
@@ -20,7 +22,7 @@ sub no_ports {
     my $extraports = shift;
 
     my $name = $host->hostname();
-    my $addresses = join(',', map {$_->addr()} $host->addresses());
+    my $addresses = join(',', map {$_->addr()} @{$host->addresses()});
     my $state = $extraports->state();
 
     print "All ports on host $name ($addresses) are in state $state\n";
@@ -47,6 +49,7 @@ sub scan_complete {
 }
 
 sub scan_started {
+
     my $self     = shift;
     my $host     = shift;
 
@@ -68,6 +71,6 @@ sub port_found {
 
     print "On host $name ($addresses), found ",
           $port->state()," port ",
-          join('/',$port->protocol(),$port->portid()),"\n";
+          join('/', $port->protocol(), $port->portid()),"\n";
 
 }

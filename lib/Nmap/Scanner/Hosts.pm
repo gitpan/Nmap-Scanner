@@ -1,6 +1,15 @@
-package Nmap::Scanner::Hosts;
 
 use strict;
+
+use Class::Generate qw(class);
+
+class 'Nmap::Scanner::Hosts' => {
+      'up'      => {qw(type $ default 0)},
+      'down'    => {qw(type $ default 0)},
+      'total'   => {qw(type $ default 0)},
+      '&as_xml' => q!qq(<hosts up="$self->{up}" down="$self->{down}" ) .
+                     qq(total="$self->{total}"/>);!
+};
 
 =pod
 
@@ -9,58 +18,18 @@ use strict;
 This class represents a hosts summary object as represented by the scanning output from
 nmap.
 
-=cut
-
-sub new {
-    my $class = shift;
-    my $me = {UP => 0, DOWN => 0, TOTAL => 0};
-    return bless $me, $class;
-}
-
-=pod
-
 =head2 up()
 
 number of hosts scanned that were reachable.
 
-=cut
-
-sub up {
-    (defined $_[1]) ? ($_[0]->{UP} = $_[1]) : return $_[0]->{UP};
-}
-
-=pod
-
 =head2 down()
 
 number of hosts scanned that were not reachable.
-
-=cut
-
-sub down {
-    (defined $_[1]) ? ($_[0]->{DOWN} = $_[1]) : return $_[0]->{DOWN};
-}
-
-=pod
 
 =head2 total()
 
 Total number of hosts scanned.
 
 =cut
-
-sub total {
-    (defined $_[1]) ? ($_[0]->{TOTAL} = $_[1]) : return $_[0]->{TOTAL};
-}
-
-sub as_xml {
-
-    my $self = shift;
-
-    return '<hosts up="' . $self->up() . '" ' .
-           'down="' . $self->down() . '" ' .
-           'total="' . $self->total() . '" />';
-
-}
 
 1;

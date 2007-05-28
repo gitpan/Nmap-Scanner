@@ -11,7 +11,7 @@ use vars qw(@ISA);
 
 @ISA = qw(Nmap::Scanner::Scanner);
 
-$Nmap::Scanner::DEBUG = 0;
+# $Nmap::Scanner::DEBUG = 1;
 
 sub new {
 
@@ -96,6 +96,13 @@ sub guessed {
 
     }
 
+    if (scalar($os->osfingerprint())) {
+        print "OS fingerprint: \n";
+        print '=' x 60 . "\n";
+        print $os->osfingerprint()->fingerprint();
+        print '=' x 60 . "\n";
+    }
+
     if (scalar($os->osmatches()) > 0) {
 
         print "OS matches: $name ($ip) could be:\n";
@@ -114,7 +121,7 @@ sub guessed {
 
     my $u = $os->uptime();
 
-    if ($u->seconds() > 0) {
+    if (defined($u) && ($u->seconds() > 0)) {
         print "Uptime: ", ($u->seconds()/(24*60*60)),
               " days (",$u->lastboot(),")\n";
     }

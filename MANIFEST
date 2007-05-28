@@ -7,6 +7,7 @@ lib/Nmap/Scanner/Backend/Results.pm
 lib/Nmap/Scanner/Backend/XML.pm
 lib/Nmap/Scanner/Address.pm
 lib/Nmap/Scanner/Backend.pm
+lib/Nmap/Scanner/Distance.pm
 lib/Nmap/Scanner/ExtraPorts.pm
 lib/Nmap/Scanner/Host.pm
 lib/Nmap/Scanner/HostList.pm
@@ -19,13 +20,15 @@ lib/Nmap/Scanner/RunStats.pm
 lib/Nmap/Scanner/ScanInfo.pm
 lib/Nmap/Scanner/Scanner.pm
 lib/Nmap/Scanner/Service.pm
+lib/Nmap/Scanner/Task.pm
+lib/Nmap/Scanner/TaskProgress.pm
 lib/Nmap/Scanner/Util.pm
+lib/Nmap/Scanner/OS/TCPTSSequence.pm
 lib/Nmap/Scanner/OS/Class.pm
 lib/Nmap/Scanner/OS/IPIdSequence.pm
 lib/Nmap/Scanner/OS/Match.pm
 lib/Nmap/Scanner/OS/PortUsed.pm
 lib/Nmap/Scanner/OS/TCPSequence.pm
-lib/Nmap/Scanner/OS/TCPTSSequence.pm
 lib/Nmap/Scanner/OS/Uptime.pm
 lib/Nmap/Scanner/Util/BannerScanner.pm
 lib/Nmap/Scanner/Hostname.pm
@@ -57,7 +60,6 @@ examples/event_scan.pl
 examples/event_scan_from_file.pl
 examples/fast_scan.pl
 examples/ftpscan.pl
-examples/ident_scan.pl
 examples/open_pipe.pl
 examples/osguess.pl
 examples/pingscan.pl
@@ -68,9 +70,11 @@ examples/svcgraph.pl
 examples/svcscan.pl
 examples/webscan.pl
 examples/whohas.pl
+examples/rpc_scan.pl
 t/batch_tcp_syn_scan.t
 t/event_tcp_syn_scan.t
 t/event_tcp_syn_scan_from_file.t
 t/max.xml
 t/victor.xml
 t/router.xml
+run-examples.sh

@@ -4,7 +4,7 @@ package Nmap::Scanner::Util::BannerScanner;
 
 =head2 NAME
 
-BannerScanner - base class for performing banner scans
+BannerScanner - base class for performing banner scans [DEPRECATED] 
 
 =cut
 use IO::Socket;
@@ -53,7 +53,7 @@ sub send_on_connect {
 
 Pass in a reference to a function that will be called when the banner is
 found.  The function will receive three arguments:  a reference to self
-(object reference of caller), a reference to an Host object repfresenting 
+(object reference of caller), a reference to an Host object representing 
 the remote host, and the banner as captured.
 
 =cut

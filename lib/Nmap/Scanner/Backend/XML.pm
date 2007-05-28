@@ -23,33 +23,58 @@ sub process {
     
     my $self = shift;
     my $pid = shift;
-    my $in = shift;
+    my $read = shift;
     my $cmdline = shift;
+    my $error = shift;
+
+    #  Suppress warnings about reading unopened handle
+    $^W = 0;
+    my $err = join('', (<$error>));
+    $^W = 1;
+
+    if ($err ne '') {
+
+        close($read);
+        close($error);
+
+        warn <<EOF;
+<nmap-error>
+  <pid="$pid"/>
+  <cmdline="$cmdline"/>
+  <nmap-err>$err</nmap-msg>
+</nmap-error>
+EOF
+        exit 1;
+    }
 
     my $handler = NmapHandler->new($self);
     my $parser = XML::SAX::ParserFactory->parser(Handler => $handler);
 
-    eval { $parser->parse_file($in) };
+    eval { $parser->parse_file($read) }; 
 
-    if ($@) {
-        # handle error
-        my $errstr=<$in>;
 
-        print tell($in);
+    if (defined($@) && ($@ ne '')) {
+
+        my $msg = join('', <$read>);
+
+        Nmap::Scanner::debug("bytes in input stream: " .  tell($read));
+        Nmap::Scanner::debug("bytes in error stream: " .  tell($error));
+
         warn <<EOF;
 <nmap-error>
   <pid="$pid"/>
   <cmdline="$cmdline"/>
   <perl-msg>$@</perl-msg>
-  <nmap-msg>$errstr</nmap-msg>
+  <nmap-msg>$msg</nmap-msg>
+  <nmap-err>$err</nmap-msg>
 </nmap-error>
 EOF
-        close($in);
+        close($read);
         exit 1;
 
     }
 
-    close($in);
+    close($read);
 
     return $handler->results();
 
@@ -79,6 +104,9 @@ package NmapHandler;
     use Nmap::Scanner::RunStats::Finished;
     use Nmap::Scanner::NmapRun;
     use Nmap::Scanner::ScanInfo;
+    use Nmap::Scanner::Task;
+    use Nmap::Scanner::TaskProgress;
+    use Nmap::Scanner::Distance;
     use Nmap::Scanner::Backend::Results;
 
     use Nmap::Scanner::OS;
@@ -89,6 +117,7 @@ package NmapHandler;
     use Nmap::Scanner::OS::TCPSequence;
     use Nmap::Scanner::OS::TCPTSSequence;
     use Nmap::Scanner::OS::IPIdSequence;
+    use Nmap::Scanner::OS::Fingerprint;
 
     #  One function per element .. fun! ;)
 
@@ -110,6 +139,7 @@ package NmapHandler;
         os            => \&os,
         portused      => \&portused,
         osclass       => \&osclass,
+        osfingerprint => \&osfingerprint,
         osmatch       => \&osmatch,
         uptime        => \&uptime,
         tcpsequence   => \&tcpsequence,
@@ -117,10 +147,14 @@ package NmapHandler;
         ipidsequence  => \&ipidsequence,
         nmaprun       => \&nmaprun,
         scaninfo      => \&scaninfo,
+        taskbegin     => \&taskbegin,
+        taskend       => \&taskend,
+        taskprogress  => \&taskprogress,
         verbose       => \&verbose,
         debugging     => \&debugging,
         runstats      => \&runstats, 
         finished      => \&finished,
+        distance      => \&distance,
     );
 
     sub new {
@@ -135,6 +169,8 @@ package NmapHandler;
         $self->{PORT_COUNT} = 0;
         $self->{NMAP_OSGUESS} = undef;
         $self->{NMAP_RESULTS} = Nmap::Scanner::Backend::Results->new();
+        $self->{NMAP_TASK} = undef;
+        $self->{NMAP_TASK_PROGRESS} = undef;
         return bless $self, $class;
     }
 
@@ -145,7 +181,9 @@ package NmapHandler;
        my $name  = $el->{Name};
 
        if (exists $HANDLERS{$name}) {
+           Nmap::Scanner::debug("About to handle $name");
            &{$HANDLERS{$name}}($self, $el->{Attributes});
+           Nmap::Scanner::debug("Handled $name");
        } else {
 
             my %attrs = %{$el->{Attributes}};
@@ -161,7 +199,9 @@ package NmapHandler;
     #  Controller for end element handlers
 
     sub end_element {
+
         my ($self, $el) = @_;
+
         if ($el->{Name} eq 'host') {
             my $host = $self->{NMAP_HOST};
             $self->{NMAP_HOST}->os($self->{NMAP_OSGUESS})
@@ -189,6 +229,13 @@ package NmapHandler;
             $self->{PORT_COUNT} = 0;
         } elsif ($el->{Name} eq 'hostnames') {
              $self->{NMAP_BACKEND}->notify_scan_started($self->{NMAP_HOST});
+        } elsif ($el->{Name} eq 'taskbegin') {
+            $self->{NMAP_BACKEND}->notify_task_started($self->{NMAP_TASK});
+        } elsif ($el->{Name} eq 'taskend') {
+            $self->{NMAP_BACKEND}->notify_task_ended($self->{NMAP_TASK});
+        } elsif ($el->{Name} eq 'taskprogress') {
+            $self->{NMAP_BACKEND}->notify_task_progress(
+                $self->{NMAP_TASK_PROGRESS});
         } elsif ($el->{Name} eq 'nmaprun') {
             $self->{NMAP_RESULTS}->nmap_run($self->{NMAP_NMAPRUN});
         }
@@ -316,6 +363,14 @@ package NmapHandler;
         $class->accuracy($ref->{'{}accuracy'}->{Value});
         $os->add_os_class($class);
     }
+
+    sub osfingerprint {
+        my ($self, $ref) = @_;
+        my $os = $self->{NMAP_OSGUESS};
+        my $fingerprint = Nmap::Scanner::OS::Fingerprint->new();
+        $fingerprint->fingerprint($ref->{'{}fingerprint'}->{Value});
+        $os->osfingerprint($fingerprint);
+    }
     
     sub osmatch {
         my ($self, $ref) = @_;
@@ -393,7 +448,58 @@ package NmapHandler;
         $info->protocol($ref->{'{}protocol'}->{Value});
         $info->numservices($ref->{'{}numservices'}->{Value});
         $info->services($ref->{'{}services'}->{Value});
-        $self->{NMAP_NMAPRUN}->scan_info($info);
+        $self->{NMAP_NMAPRUN}->add_scan_info($info);
+    }
+
+    sub taskbegin {
+        my ($self, $ref) = @_;
+        my $name = $ref->{'{}task'}->{'Value'};
+        my $time = $ref->{'{}time'}->{'Value'};
+        my $task = Nmap::Scanner::Task->new();
+        $task->name($name);
+        $task->begin_time($time);
+        $self->{NMAP_TASK} = $task;
+    }
+
+    sub taskprogress {
+
+        my ($self, $ref) = @_;
+
+        my $time = $ref->{'{}time'}->{'Value'};
+        my $percent = $ref->{'{}percent'}->{'Value'};
+        my $remaining = $ref->{'{}remaining'}->{'Value'};
+        my $etc = $ref->{'{}etc'}->{'Value'};
+        my $tp = Nmap::Scanner::TaskProgress->new();
+
+        $tp->task($self->{NMAP_TASK});
+        $tp->time($time);
+        $tp->percent($percent);
+        $tp->remaining($remaining);
+        $tp->etc($etc);
+
+        $self->{NMAP_TASK_PROGRESS} = $tp;
+
+    }
+
+    sub taskend {
+
+        my ($self, $ref) = @_;
+        my $name = $ref->{'{}task'}->{'Value'};
+        my $time = $ref->{'{}time'}->{'Value'};
+        my $task = $self->{NMAP_TASK};
+
+        $task->end_time($time);
+
+        $self->{NMAP_NMAPRUN}->add_task($task);
+
+    }
+
+    sub distance {
+        my ($self, $ref) = @_;
+        my $distance = Nmap::Scanner::Distance->new();
+        my $value = $ref->{'{}value'}->{Value};
+        $distance->value($value);
+        $self->{NMAP_HOST}->distance($distance);
     }
 
     sub verbose {

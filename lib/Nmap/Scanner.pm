@@ -2,7 +2,7 @@ package Nmap::Scanner;
 
 use vars qw($VERSION @ISA);
 
-$VERSION = '0.9';
+$VERSION = '1.0';
 
 #  Set this to 1 and debugging is on for all modules
 $Nmap::Scanner::DEBUG = 0;
@@ -77,8 +77,8 @@ Nmap::Scanner - Perform and manipulate nmap scans using perl
       my $self     = shift;
       my $host     = shift;
   
-      my $hostname = $host->name();
-      my $addresses = join(',', map {$_->address()} $host->addresses());
+      my $hostname = $host->hostname();
+      my $addresses = join(',', map {$_->addr()} $host->addresses());
       my $status = $host->status();
   
       print "$hostname ($addresses) is $status\n";
@@ -89,7 +89,7 @@ Nmap::Scanner - Perform and manipulate nmap scans using perl
       my $host     = shift;
       my $port     = shift;
   
-      my $name = $host->name();
+      my $name = $host->hostname();
       my $addresses = join(',', map {$_->addr()} $host->addresses());
   
       print "On host $name ($addresses), found ",

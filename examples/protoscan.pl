@@ -8,6 +8,8 @@ use strict;
 
 my $scanner = new Nmap::Scanner;
 
+# $Nmap::Scanner::DEBUG = 1;
+
 $scanner->protocol_scan();
 $scanner->debug(1);
 $scanner->add_target($ARGV[0] || 

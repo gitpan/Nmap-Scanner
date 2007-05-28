@@ -14,10 +14,16 @@ use strict;
 use lib 'lib';
 use Nmap::Scanner;
 
+$Nmap::Scanner::DEBUG = 1;
+
 my %HOSTS;
 my %PORTS;
 
 my $scan = new Nmap::Scanner();
+
+$scan->register_task_started_event(\&task);
+$scan->register_task_ended_event(\&task);
+$scan->register_task_progress_event(\&task_progress);
 
 $scan->debug(1);
 $scan->tcp_syn_scan();
@@ -46,12 +52,14 @@ while (my $host = $hosts->get_next()) {
                            $port->service()->version(),
                            $port->service()->extrainfo());
         $PORTS{$key}++;
-        push(@{$HOSTS{$key}},$host->hostname());
+        my $names = join('/', map {$_->addr(); } ($host->addresses()));
+        push(@{$HOSTS{$key}}, $names);
     }
 
 }
 
 for my $svc (sort by_port_name keys %PORTS) {
+
     my ($n, $p, $proto, $product, $version, $extra) = split(':', $svc);
     print "\n$n ($p/$proto -- $product: $version [$extra]):\n";
 
@@ -75,5 +83,32 @@ sub by_port_name {
     my $portb = (split(':',$b))[0];
 
     $porta cmp $portb;
+}
+
+sub task {
+
+    my $self = shift;
+    my $task = shift;
+
+    print "Task " . $task->name() . ": started=" . $task->begin_time();
+    if ($task->end_time() ne '') {
+        print ", ended=" .  $task->end_time() .
+              ", secs=" . ($task->end_time() - $task->begin_time());
+    }
+    print "\n";
+
+}
+
+sub task_progress {
+
+    my $self = shift;
+    my $tp = shift;
+
+    print "Task " . $tp->task()->name() . ":\n";
+    print "  - started: " . $tp->task()->begin_time() . "\n";
+    print "  - percent: " . $tp->percent() . "\n";
+    print "  - to do:   " . $tp->remaining() . "\n";
+    print "  - etc:     " . $tp->etc() . "\n";
+
 }
 

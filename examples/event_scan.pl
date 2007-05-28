@@ -3,12 +3,14 @@
 use lib 'lib';
 
 use Nmap::Scanner;
+$|++;
 
 use strict;
 
-my $scanner = new Nmap::Scanner;
+my $scanner = Nmap::Scanner->new();
 
-#$scanner->debug(1);
+# $Nmap::Scanner::DEBUG = 1;
+
 my $hosts = $ARGV[0] || 
                 die "Missing host spec (e.g. localhost)\n$0 host_spec port_spec\n";
 my $ports = $ARGV[1] || 
@@ -26,7 +28,7 @@ sub no_ports {
     my $extraports = shift;
 
     my $name = $host->hostname();
-    my $addresses = join(',', map {$_->addr()} $host->addresses());
+    my $addresses = join(',', map {$_->addr()} @{$host->addresses()});
     my $state = $extraports->state();
 
     print "All ports on host $name ($addresses) are in state $state\n";
@@ -36,6 +38,8 @@ sub scan_complete {
 
     my $self      = shift;
     my $host      = shift;
+
+    # print $host->as_xml();
 
     print "Finished scanning ", $host->hostname(),":\n";
 
@@ -47,7 +51,7 @@ sub scan_complete {
         my $uptime = $guess->uptime;
 
         print "  * Host has been up since " . $uptime->lastboot() . "\n"
-            if $uptime->lastboot() ne '';
+            if (defined($uptime) && $uptime->lastboot() ne '');
 
         my $t = $guess->tcpsequence();
 

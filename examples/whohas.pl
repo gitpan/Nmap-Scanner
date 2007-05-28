@@ -21,41 +21,18 @@ use Network::IPv4Addr qw(ipv4_network);
 use File::Find;
 use File::Spec;
 
-my $USAGE = "$0 svc[,svc,svc...] open|closed|filtered";
+my $USAGE = "$0 svc[,svc,svc...] open|closed|filtered CIDR";
 
 my $SVCSPEC = $ARGV[0] || die $USAGE;
 my $STATE    = $ARGV[1] || die $USAGE;
+my $addr = $ARGV[2] || die $USAGE;
 
 $STATE =~ m/open|closed|filtered/ || die "Invalid state $STATE\n$USAGE\n";
 
-#  Find out our network and netmask ... what a pain this
-#  was to do .. anyone know of easier ways to get this
-#  in perl portably?
-
-my $name = gethostbyaddr(inet_aton('127.0.0.1'), AF_INET);
-
-my $res = new Net::DNS::Resolver;
-my $query = $res->search("$name");
-my $addr = '';
-
-if ($name eq 'localhost') {
-#  Find address for localhost on different IF
-    print gethostbyname('');
-}
-
-if ($query) {
-  foreach my $rr ($query->answer) {
-     next unless $rr->type eq "A";
-     $addr = $rr->address;
-     last unless $addr eq '127.0.0.1';
-  }
-} else {
-  print "query failed: ", $res->errorstring, "\n";
-}
 
 my ($net,$msk) = ipv4_network($addr);
 
-my $scan = new Nmap::Scanner();
+my $scan = Nmap::Scanner->new();
 
 #
 #  Try to turn service names into port numbers with 
@@ -68,15 +45,16 @@ print "Looking for hosts that have $SVCSPEC $STATE on $net/$msk\n";
 
 $scan->tcp_syn_scan();
 $scan->udp_scan();
-$scan->use_interface('ppp0');
+$scan->use_interface('eth0');
 $scan->add_target("$net/$msk");
 $scan->add_scan_port($SVCSPEC);
+$scan->register_scan_complete_event(\&host);
+$scan->scan();
 
+sub host {
 
-my $hosts = $scan->scan->get_host_list();
-
-while (my $host = $hosts->get_next()) {
-
+    my $self = shift;
+    my $host = shift;
 
     my @ports;
 
@@ -87,8 +65,12 @@ while (my $host = $hosts->get_next()) {
         push(@ports, $port);
     }
 
+    my $addresses = join(',', map { $_->addr(); } $host->addresses());
+
+    my $name = $host->hostname() ? $host->hostname() : 'N/A';
+
     if (@ports) {
-        print $host->hostname(),": ", 
+        print "$name [$addresses]: ",
               join(', ',sort map{join('/',
                                  $_->service()->name(),
                                  $_->protocol())} @ports),

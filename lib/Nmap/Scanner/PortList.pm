@@ -1,23 +1,6 @@
 package Nmap::Scanner::PortList;
 
-use Nmap::Scanner::Port;
 use strict;
-
-=pod
-
-=head2 DESCRIPTION
-
-Holds a list of Nmap::Scanner::Port
-objects.  get_next() returns a port
-reference while there are ports in
-the list and returns undef when
-the list is exhausted.
-
-get_next_tcp() and get_next_udp() will
-return the next port of either protocol;
-get_next() returns first tcp then udp.
-
-=cut
 
 sub new {
     my $class = shift;
@@ -48,13 +31,11 @@ sub get_next {
 sub as_xml {
     my $self = shift;
 
-    local($_);
-
     my $xml;
 
-    while ($_ = $self->get_next()) {
-        last unless defined $_;
-        $xml .= $_->as_xml() . "\n";
+    while (my $p = $self->get_next()) {
+        last unless defined $p;
+        $xml .= $p->as_xml() . "\n";
     }
 
     return $xml;
@@ -62,3 +43,20 @@ sub as_xml {
 }
 
 1;
+
+=pod
+
+=head2 DESCRIPTION
+
+Holds a list of Nmap::Scanner::Port
+objects.  get_next() returns a port
+reference while there are ports in
+the list and returns undef when
+the list is exhausted.  Port lists are  
+sorted internally by port number.
+
+get_next_tcp() and get_next_udp() will
+return the next port of either protocol;
+get_next() returns first tcp then udp.
+
+=cut

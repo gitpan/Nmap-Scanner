@@ -2,6 +2,8 @@ package Nmap::Scanner::Scanner;
 
 use File::Spec;
 use Nmap::Scanner::Backend::XML;
+use LWP::UserAgent;
+use File::Temp;
 use strict;
 
 =pod
@@ -175,6 +177,59 @@ sub register_no_ports_open_event {
     return $_[0];
 }
 
+=head2 register_task_started_event(\&task_begin);
+
+Register to be notified when an internal nmap task starts.
+Pass in a reference to a function that takes a $self object 
+reference and an Nmap::Scanner::Task reference.  Note that
+end_time() will be undefined in the Task instance as this is
+a begin event.
+
+task_begin($self, $task);
+
+=cut
+
+#  Function pointer that receives Nmap::Scanner::Task instance
+sub register_task_started_event {
+    $_[0]->{'TASK_STARTED_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
+}
+
+=head2 register_task_ended_event(\&task_end);
+
+Register to be notified when an internal nmap task ends.
+Pass in a reference to a function that takes a $self object 
+reference and an Nmap::Scanner::Task reference.  
+
+task_end($self, $task);
+
+=cut
+
+#  Function pointer that receives Nmap::Scanner::Task instance
+sub register_task_ended_event {
+    $_[0]->{'TASK_ENDED_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
+}
+
+=head2 register_task_progress_event(\&task_progress);
+
+Register to be notified when an internal nmap task progress
+event is fired; this happens when a task takes more than a
+few seconds to complete (good for GUIs).
+
+Pass in a reference to a function that takes a $self object 
+reference and an Nmap::Scanner::TaskProgress reference.  
+
+task_progress($self, $task_progress);
+
+=cut
+
+#  Function pointer that receives Nmap::Scanner::Task instance
+sub register_task_progress_event {
+    $_[0]->{'TASK_PROGRESS_EVENT'} = [$_[0], $_[1]];
+    return $_[0];
+}
+
 =pod
 
 =head2 debug()
@@ -203,10 +258,22 @@ sub norun {
 
 =pod
 
+=head2 use_interface()
+
+specify the network interface that nmap should use for scanning
+
+=cut
+
+sub use_interface {
+    $_[0]->{OPTS}->{'-e'} = $_[1];
+    return $_[0];
+}
+
+=pod
+
 =head2 SCAN TYPES
 
-See the nmap man page for descriptions of all these.  Not all nmap
-scan types are supported with this release due to time limitations.
+See the nmap man page for descriptions of all these.
 
 =head2 tcp_connect_scan()
 
@@ -224,10 +291,10 @@ scan types are supported with this release due to time limitations.
 
 =head2 protocol_scan()
 
-If this scan is used, the protocols can be retrieve from
+If this scan is used, the protocols can be retrieved from
 the Nmap::Scanner::Host objects using the method
-get_protocol_list() .. this will return a list of
-Nmap::Scanner::Port object references of type ip.
+get_protocol_list(); this method returns a list of
+Nmap::Scanner::Port object references of type 'ip.'
 
 =head2 idle_scan($zombie_host, $probe_port)
 
@@ -235,19 +302,11 @@ Nmap::Scanner::Port object references of type ip.
 
 =head2 window_scan()
 
-=head2 version_scan()
+=head2 version_scan($intestity)
 
 =head2 rpc_scan()
 
-XXX:  Need to implement code to support the results returned from
-this.  START HERE in man page.
-
 =cut
-
-sub use_interface {
-    $_[0]->{OPTS}->{'-e'} = shift;
-    return $_[0];
-}
 
 sub tcp_connect_scan {
     $_[0]->{TYPE} = 'T';
@@ -305,14 +364,13 @@ sub window_scan {
 }
 
 sub rpc_scan {
-    $_[0]->{RPCSCAN} = 'R';
+    $_[0]->{'OPTS'}->{'-sR'} = '';
     return $_[0];
 }
 
 sub version_scan {
-
-    $_[0]->{'OPTS'}->{'-sV'} = '';
-
+    my $intensity = $_[1] || '5';
+    $_[0]->{'OPTS'}->{'-sV'} = "--version-intensity $intensity";
     return $_[0];
 }
 
@@ -321,7 +379,7 @@ sub version_scan {
 =head2 SPECIFYING PORTS TO SCAN
 
 Use add_scan_port($port_spec) to add one or more ports
-to scan.  $port_spec can be a single port or a range ...
+to scan.  $port_spec can be a single port or a range:  
 $n->add_scan_port(80) or $n->add_scan_port('80-1023');
 
 Use delete_scan_port($portspec) to delete a port or range
@@ -552,9 +610,9 @@ sub insane_timing {
 
 =head2 OTHER OPTIONS
 
-There are many other nmap options.  This version does not
-attempt to represent them all.  I welcome patches from 
-users :) and I will fill in missing gaps as I have time.
+There are many other nmap options.  I have done my best
+to to represent them all.  I welcome patches from 
+users for any that I have missed.
 
 For details on any of these methods see the nmap 
 documentation.
@@ -594,11 +652,13 @@ sub fast_scan {
 
 =pod
 
-=head2 ident_check()
+=head2 ident_check() [DEPRECATED]
 
 Attempts to find the user that owns each open port by
 querying the ident damon of the remote host.  See the
-nmap man page for more details.
+nmap man page for more details.  Support for ident 
+checking is being removed from nmap as so few hosts 
+allow or utilize IDENT anymore.
 
 =cut
 
@@ -770,9 +830,10 @@ sub scan {
 
     my $processor = $this->_setup_processor();
 
-    my ($pid, $read)= $processor->start_nmap2($cmd);
+    my ($pid, $read, $write, $error) = $processor->start_nmap($cmd);
+    close($write);
 
-    $this->{'RESULTS'} = $processor->process($pid,$read,$cmd);
+    $this->{'RESULTS'} = $processor->process($pid, $read, $cmd, $error);
 
     return $this->{'RESULTS'};
 
@@ -787,31 +848,59 @@ output file.  Pass this method in the name of an
 XML file created by a previously performed nmap
 scan done in XML output mode and the file will be
 processed in the same manner as a live scan would
-be processed.
+be processed. If the passed in file looks like a 
+URI, the module will attempt to retrieve the file 
+using an HTTP GET simple (LWP::UserAgent).
 
-Example:
+Examples:
 
  my $scanner = Nmap::Scanner->new();
  my $results = $scanner->scan_from_file('/path/to/scan_output.xml');
+ my $results = $scanner->scan_from_file('http://example.com/results.xml');
 
 =cut
 
 sub scan_from_file {
     
     my $this = shift;
+
     my $filename = shift || 
         die "scan_from_file: missing filename to read from!";
 
-    local (*READ);
+    my $handle;
 
-    open (READ, "< $filename") ||
-        die "scan_from_file: Can't read from $filename: $!";
+    if ($filename =~ m#://#) {
 
-    my $file = *READ;
+        my $agent = LWP::UserAgent->new(
+                        'agent' => "Nmap::Scanner/$Nmap::Scanner::VERSION");
+        my $response = $agent->get($filename);
+
+        if (! $response->is_success()) {
+            die "scan_from_file: unable to retrieve $filename: " .
+                $response->status_line();
+        }
+
+        my $dir = File::Temp::tempdir( CLEANUP => 1 );
+        ($handle, $filename) = File::Temp::tempfile( DIR => $dir );
+
+        print $handle $response->content();
+
+        seek($handle, 0, 0);
+
+    } else {
+
+        local (*READ);
+
+        open (READ, "< $filename") ||
+            die "scan_from_file: Can't read from $filename: $!";
+
+        $handle = *READ;
+
+    }
 
     my $processor = $this->_setup_processor();
 
-    $this->{'RESULTS'} = $processor->process($$, $file, $filename);
+    $this->{'RESULTS'} = $processor->process($$, $handle, $filename);
 
     return $this->{'RESULTS'};
 
@@ -877,6 +966,9 @@ sub _setup_processor {
     $processor->register_host_closed_event($this->{'HOST_CLOSED_EVENT'});
     $processor->register_port_found_event($this->{'PORT_FOUND_EVENT'});
     $processor->register_no_ports_open_event($this->{'NO_PORTS_OPEN_EVENT'});
+    $processor->register_task_started_event($this->{'TASK_STARTED_EVENT'});
+    $processor->register_task_ended_event($this->{'TASK_ENDED_EVENT'});
+    $processor->register_task_progress_event($this->{'TASK_PROGRESS_EVENT'});
 
     return $processor;
 
